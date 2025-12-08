@@ -1,0 +1,111 @@
+{
+  "name": "rwkv-code-completion",
+  "displayName": "rwkv-code-completion",
+  "description": "",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.106.1"
+  },
+  "categories": [
+    "Programming Languages",
+    "Machine Learning"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "rwkv-code-completion.toggleCompletion",
+        "title": "RWKV: 启用/禁用代码补全"
+      },
+      {
+        "command": "rwkv-code-completion.openSettings",
+        "title": "RWKV: 打开设置"
+      }
+    ],
+    "configuration": {
+      "title": "RWKV Code Completion",
+      "properties": {
+        "rwkv-code-completion.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "启用或禁用代码补全"
+        },
+        "rwkv-code-completion.endpoint": {
+          "type": "string",
+          "default": "http://192.168.0.12:8000/v3/chat/completions",
+          "description": "RWKV 服务端点地址"
+        },
+        "rwkv-code-completion.password": {
+          "type": "string",
+          "default": "rwkv7_7.2b_webgen",
+          "description": "RWKV 服务密码"
+        },
+        "rwkv-code-completion.maxTokens": {
+          "type": "number",
+          "default": 16,
+          "description": "最大生成 token 数（8-32 推荐，越小越精准）"
+        },
+        "rwkv-code-completion.temperature": {
+          "type": "number",
+          "default": 0.1,
+          "minimum": 0,
+          "maximum": 2,
+          "description": "生成温度（0.05-0.2 推荐，越低越确定）"
+        },
+        "rwkv-code-completion.topP": {
+          "type": "number",
+          "default": 0.95,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Top P 采样参数（0.9-0.98 推荐）"
+        },
+        "rwkv-code-completion.alphaPresence": {
+          "type": "number",
+          "default": 0.5,
+          "description": "Alpha Presence 参数"
+        },
+        "rwkv-code-completion.alphaFrequency": {
+          "type": "number",
+          "default": 0.5,
+          "description": "Alpha Frequency 参数"
+        },
+        "rwkv-code-completion.debounceDelay": {
+          "type": "number",
+          "default": 300,
+          "minimum": 0,
+          "maximum": 5000,
+          "description": "触发补全的延迟时间（毫秒）"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "pnpm run package",
+    "compile": "pnpm run check-types && pnpm run lint && node esbuild.js",
+    "watch": "npm-run-all -p watch:*",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "package": "pnpm run check-types && pnpm run lint && node esbuild.js --production",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.106.1",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "typescript-eslint": "^8.48.1",
+    "eslint": "^9.39.1",
+    "esbuild": "^0.27.1",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.9.3",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2"
+  }
+}
