@@ -6,7 +6,7 @@
 
 ## 当前使用
 
-默认使用 SiliconFlow（硅基流动）作为 AI 服务提供商。
+默认使用本地 RWKV 服务作为 AI 服务提供商。
 
 ## 切换服务提供商
 
@@ -50,19 +50,23 @@ export const aiService = new AIService(provider);
 
 ## 支持的提供商
 
-### SiliconFlow（当前）
+### RWKV Local（当前）
 
-使用 `@azure/core-sse` 处理 SSE 流式响应。
+使用本地 RWKV 模型服务。
 
 配置：
 
 ```typescript
-const provider = new SiliconFlowProvider({
-  apiKey: "your-api-key",
-  baseUrl: "https://api.siliconflow.cn/v1/chat/completions", // 可选
-  defaultModel: "deepseek-ai/DeepSeek-V3", // 可选
+const provider = new RWKVLocalProvider({
+  baseUrl: "http://192.168.0.82:8001/v3/chat/completions",
+  password: "rwkv7_7.2b",
 });
 ```
+
+配置项会从 VSCode 设置中读取：
+
+- `rwkv-code-completion.chat.baseUrl`: 服务地址
+- `rwkv-code-completion.chat.password`: 服务密码
 
 ### 扩展其他提供商
 
@@ -71,6 +75,7 @@ const provider = new SiliconFlowProvider({
 - OpenAI
 - Azure OpenAI
 - Claude
+- SiliconFlow
 - 其他兼容 OpenAI API 的服务
 
 ## 使用示例

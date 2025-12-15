@@ -2,8 +2,9 @@
  * AI 服务统一入口
  */
 
+import * as vscode from "vscode";
 import { AIServiceProvider, AIMessage, ChatOptions } from "./types";
-import { SiliconFlowProvider } from "./providers/SiliconFlowProvider";
+import { RWKVLocalProvider } from "./providers/RWKVLocalProvider";
 
 export class AIService {
   private provider: AIServiceProvider;
@@ -94,10 +95,19 @@ export class AIService {
   }
 }
 
-// 创建默认实例
-const provider = new SiliconFlowProvider({
-  apiKey: "sk-akaemjzequsiwfzyfpijamrnsuvvfeicsbtsqnzqshfvxexv",
-});
+// 创建默认实例 - 使用本地 RWKV 服务
+function createProvider(): RWKVLocalProvider {
+  const config = vscode.workspace.getConfiguration("rwkv-code-completion");
+  const baseUrl =
+    config.get<string>("chat.baseUrl") ||
+    "http://192.168.0.82:8001/v3/chat/completions";
+  const password = config.get<string>("chat.password") || "rwkv7_7.2b";
 
-export const aiService = new AIService(provider);
+  return new RWKVLocalProvider({
+    baseUrl,
+    password,
+  });
+}
+
+export const aiService = new AIService(createProvider());
 

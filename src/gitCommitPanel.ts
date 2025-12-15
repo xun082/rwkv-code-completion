@@ -270,7 +270,7 @@ export class GitCommitPanelProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  // buildPrompt 和 callAI 方法已被 SiliconFlow 服务替代
+  // buildPrompt 和 callAI 方法已被 AI 服务替代
 
   private async commitChanges(message: string) {
     try {

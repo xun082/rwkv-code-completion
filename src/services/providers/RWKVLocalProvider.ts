@@ -1,25 +1,22 @@
 /**
- * SiliconFlow AI 服务提供商
+ * RWKV 本地服务提供商
  */
 
 import { AIServiceProvider, AIMessage, ChatOptions } from "../types";
 
-interface SiliconFlowConfig {
-  apiKey: string;
-  baseUrl?: string;
+interface RWKVLocalConfig {
+  baseUrl: string;
+  password?: string;
   defaultModel?: string;
 }
 
-export class SiliconFlowProvider implements AIServiceProvider {
-  private readonly apiKey: string;
-  private readonly baseUrl: string;
-  private readonly defaultModel: string;
+export class RWKVLocalProvider implements AIServiceProvider {
+  private baseUrl: string;
+  private password: string;
 
-  constructor(config: SiliconFlowConfig) {
-    this.apiKey = config.apiKey;
-    this.baseUrl =
-      config.baseUrl || "https://api.siliconflow.cn/v1/chat/completions";
-    this.defaultModel = config.defaultModel || "deepseek-ai/DeepSeek-V3";
+  constructor(config: RWKVLocalConfig) {
+    this.baseUrl = config.baseUrl || "http://192.168.0.82:8001/v3/chat/completions";
+    this.password = config.password || "rwkv7_7.2b";
   }
 
   async chat(messages: AIMessage[], options?: ChatOptions): Promise<string> {
@@ -97,7 +94,7 @@ export class SiliconFlowProvider implements AIServiceProvider {
                 break;
               }
             } catch (parseError) {
-              // 忽略单个事件的解析错误，继续处理
+              // 忽略单个事件的解析错误
               console.warn("Parse SSE event error:", parseError);
             }
           }
@@ -130,29 +127,25 @@ export class SiliconFlowProvider implements AIServiceProvider {
     options?: ChatOptions
   ): Promise<Response> {
     const body: any = {
-      model: options?.model || this.defaultModel,
       messages: messages,
+      max_tokens: options?.maxTokens || 1024,
+      stop_tokens: options?.stopTokens || [0, 261, 24281],
+      temperature: options?.temperature ?? 1.0,
+      top_k: options?.topK || 1,
+      top_p: 0.3,
+      pad_zero: true,
+      alpha_presence: 0.5,
+      alpha_frequency: 0.5,
+      alpha_decay: 0.996,
+      chunk_size: 128,
       stream: stream,
-      max_tokens: options?.maxTokens || 4096,
-      temperature: options?.temperature ?? 0.7,
-      top_p: 0.7,
-      top_k: 50,
-      frequency_penalty: 0.5,
-      n: 1,
-      response_format: { type: "text" },
+      enable_think: true,
+      password: this.password,
     };
-
-    // 添加 stop tokens（如果有）
-    if (options?.stopTokens && options.stopTokens.length > 0) {
-      body.stop = options.stopTokens;
-    } else {
-      body.stop = null;
-    }
 
     const response = await fetch(this.baseUrl, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${this.apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
@@ -167,3 +160,4 @@ export class SiliconFlowProvider implements AIServiceProvider {
     return response;
   }
 }
+

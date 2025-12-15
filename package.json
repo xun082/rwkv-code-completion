@@ -183,6 +183,16 @@
           "maximum": 5000,
           "description": "触发补全的延迟时间（毫秒）"
         },
+        "rwkv-code-completion.chat.baseUrl": {
+          "type": "string",
+          "default": "http://192.168.0.82:8001/v3/chat/completions",
+          "description": "AI 聊天服务地址"
+        },
+        "rwkv-code-completion.chat.password": {
+          "type": "string",
+          "default": "rwkv7_7.2b",
+          "description": "AI 聊天服务密码"
+        },
         "rwkv-code-completion.git.commitTypes": {
           "type": "array",
           "default": [
@@ -284,7 +294,6 @@
     "typescript-eslint": "^8.48.1"
   },
   "dependencies": {
-    "@azure/core-sse": "^2.3.0",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-slot": "^1.2.4",
     "class-variance-authority": "^0.7.1",
