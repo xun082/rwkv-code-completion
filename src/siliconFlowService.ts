@@ -195,30 +195,25 @@ export class SiliconFlowService {
   /**
    * 生成 Git 提交信息
    */
-  async generateGitCommit(diff: string): Promise<string> {
+  async generateGitCommit(
+    diff: string,
+    commitType?: string,
+    scope?: string
+  ): Promise<string> {
+    const typeInfo = commitType ? `类型已选择: ${commitType}` : "";
+    const scopeInfo = scope ? `范围: ${scope}` : "";
+
     const systemPrompt = `你是一个专业的 Git 提交信息生成助手。
-请根据提供的 Git diff 内容，生成一条符合 Conventional Commits 规范的提交信息。
+请根据提供的 Git diff 内容，生成简洁的提交描述（subject）。
 
-规范格式：
-<type>(<scope>): <subject>
-
-<body>
-
-类型（type）：
-- feat: 新功能
-- fix: 修复 bug
-- docs: 文档更新
-- style: 代码格式调整
-- refactor: 重构
-- perf: 性能优化
-- test: 测试相关
-- chore: 构建/工具链相关
-
+${typeInfo ? typeInfo + "\n" : ""}${scopeInfo ? scopeInfo + "\n" : ""}
 要求：
-1. subject 使用中文，简洁明了（不超过 50 字）
-2. body 可选，详细说明改动原因和内容
-3. 如果改动较小，只返回第一行即可
-4. 不要包含 markdown 格式，直接返回纯文本`;
+1. 只返回提交描述（subject 部分），不要包含类型（type）和范围（scope）
+2. 使用中文，简洁明了，不超过 50 字
+3. 直接描述改动内容，例如："添加用户登录功能"、"修复数据库连接问题"
+4. 不要包含任何格式符号，只返回纯文本描述
+5. 不要包含 markdown 格式或代码块
+6. 不要重复前面的类型和范围信息`;
 
     const messages: SiliconFlowMessage[] = [
       {
@@ -227,14 +222,14 @@ export class SiliconFlowService {
       },
       {
         role: "user",
-        content: `请为以下 Git diff 生成提交信息：\n\n${diff}`,
+        content: `请为以下 Git diff 生成提交描述：\n\n${diff}`,
       },
     ];
 
     return await this.chat(messages, {
-      model: "deepseek", // 使用 DeepSeek V3 生成提交信息
+      model: "deepseek",
       temperature: 0.7,
-      maxTokens: 500,
+      maxTokens: 200,
     });
   }
 

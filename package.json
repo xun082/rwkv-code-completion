@@ -182,6 +182,67 @@
           "minimum": 0,
           "maximum": 5000,
           "description": "触发补全的延迟时间（毫秒）"
+        },
+        "rwkv-code-completion.git.commitTypes": {
+          "type": "array",
+          "default": [
+            {
+              "type": "feat",
+              "description": "新功能",
+              "emoji": "✨"
+            },
+            {
+              "type": "fix",
+              "description": "修复",
+              "emoji": "🐛"
+            },
+            {
+              "type": "docs",
+              "description": "文档",
+              "emoji": "📝"
+            },
+            {
+              "type": "style",
+              "description": "格式",
+              "emoji": "💄"
+            },
+            {
+              "type": "refactor",
+              "description": "重构",
+              "emoji": "♻️"
+            },
+            {
+              "type": "perf",
+              "description": "性能",
+              "emoji": "⚡"
+            },
+            {
+              "type": "test",
+              "description": "测试",
+              "emoji": "✅"
+            },
+            {
+              "type": "build",
+              "description": "构建",
+              "emoji": "📦"
+            },
+            {
+              "type": "ci",
+              "description": "CI/CD",
+              "emoji": "👷"
+            },
+            {
+              "type": "chore",
+              "description": "杂项",
+              "emoji": "🔧"
+            }
+          ],
+          "description": "Git 提交类型配置"
+        },
+        "rwkv-code-completion.git.useEmoji": {
+          "type": "boolean",
+          "default": false,
+          "description": "在提交消息中使用 emoji"
         }
       }
     }
@@ -223,6 +284,7 @@
     "typescript-eslint": "^8.48.1"
   },
   "dependencies": {
+    "@azure/core-sse": "^2.3.0",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-slot": "^1.2.4",
     "class-variance-authority": "^0.7.1",

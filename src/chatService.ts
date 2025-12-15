@@ -1,4 +1,5 @@
-import { siliconFlowService } from "./siliconFlowService";
+import { aiService } from "./services/AIService";
+import { AIMessage } from "./services/types";
 
 export interface ChatMessage {
   role: "user" | "assistant" | "system";
@@ -25,7 +26,13 @@ export class ChatService {
 
       let fullMessage = "";
 
-      await siliconFlowService.sendMessageStream(
+      // 转换为 AIMessage 格式
+      const aiMessages: AIMessage[] = historyToUse.map((msg) => ({
+        role: msg.role as "user" | "assistant" | "system",
+        content: msg.content,
+      }));
+
+      await aiService.sendMessageStream(
         userMessage,
         (chunk: string) => {
           fullMessage += chunk;
@@ -33,10 +40,7 @@ export class ChatService {
             onChunk(chunk);
           }
         },
-        historyToUse.map((msg) => ({
-          role: msg.role as "user" | "assistant" | "system",
-          content: msg.content,
-        })),
+        aiMessages,
         signal
       );
 

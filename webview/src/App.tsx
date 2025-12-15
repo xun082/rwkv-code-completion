@@ -4,7 +4,7 @@ import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import { Message } from "./types";
 import { vscode } from "./vscode";
-import { Trash2, Send, Square } from "lucide-react";
+import { Trash2, Send, Square, Copy, Check } from "lucide-react";
 import "highlight.js/styles/github-dark.css";
 
 const STORAGE_KEY = "rwkv-chat-messages";
@@ -180,10 +180,13 @@ const App: React.FC = () => {
   const handleClear = () => {
     if (messages.length === 0) return;
 
-    if (confirm("确定要清空所有聊天记录吗？此操作不可恢复。")) {
-      vscode.postMessage({ type: "clearHistory" });
-      setMessages([]);
+    // 直接清空，不需要确认
+    vscode.postMessage({ type: "clearHistory" });
+    setMessages([]);
+    try {
       localStorage.removeItem(STORAGE_KEY);
+    } catch (e) {
+      // 忽略 localStorage 错误
     }
   };
 
@@ -220,28 +223,31 @@ const App: React.FC = () => {
   return (
     <div className="flex flex-col h-screen bg-(--vscode-sideBar-background)">
       {/* Header */}
-      <div className="flex flex-col border-b border-(--vscode-panel-border)">
-        <div className="flex items-center justify-between px-3 py-2">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-(--vscode-button-background) flex items-center justify-center text-xs font-semibold text-(--vscode-button-foreground)">
+      <div className="flex flex-col border-b border-(--vscode-panel-border) bg-gradient-to-r from-(--vscode-sideBar-background) to-(--vscode-editor-background)">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-sm font-bold text-white shadow-lg">
               AI
             </div>
             <div className="flex flex-col">
-              <h3 className="text-sm font-medium text-(--vscode-foreground)">
+              <h3 className="text-sm font-semibold text-(--vscode-foreground) mb-0.5">
                 AI 聊天助手
               </h3>
-              {totalMessages > 0 && (
-                <span className="text-xs text-(--vscode-descriptionForeground)">
-                  共 {totalMessages} 条 · 上下文 {contextCount} 条
-                </span>
-              )}
+              <div className="flex items-center gap-2 text-xs">
+                {totalMessages > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-(--vscode-badge-background) text-(--vscode-badge-foreground)">
+                    <span className="font-medium">{totalMessages}</span>
+                    <span className="opacity-80">条消息</span>
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <button
             onClick={handleClear}
             disabled={messages.length === 0}
             title="清空聊天记录"
-            className="h-7 w-7 flex items-center justify-center text-(--vscode-icon-foreground) hover:bg-(--vscode-toolbar-hoverBackground) rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="h-8 w-8 flex items-center justify-center text-(--vscode-icon-foreground) hover:bg-(--vscode-toolbar-hoverBackground) rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:scale-105"
           >
             <Trash2 size={16} />
           </button>
@@ -249,15 +255,17 @@ const App: React.FC = () => {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {messages.length === 0 && !isLoading && (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="text-4xl mb-3 opacity-20">💬</div>
-            <p className="text-sm text-(--vscode-descriptionForeground) mb-1">
-              开始对话
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500/10 to-purple-600/10 flex items-center justify-center mb-4">
+              <div className="text-5xl">💬</div>
+            </div>
+            <p className="text-base font-medium text-(--vscode-foreground) mb-2">
+              开始新对话
             </p>
-            <p className="text-xs text-(--vscode-descriptionForeground) opacity-60">
-              自动保存聊天记录 · 智能上下文管理
+            <p className="text-xs text-(--vscode-descriptionForeground) opacity-70 max-w-[200px]">
+              支持 Markdown 格式 · 自动保存历史 · 智能上下文管理
             </p>
           </div>
         )}
@@ -270,8 +278,8 @@ const App: React.FC = () => {
       </div>
 
       {/* Input */}
-      <div className="p-3 border-t border-(--vscode-panel-border)">
-        <div className="flex items-end gap-2">
+      <div className="p-4 border-t border-(--vscode-panel-border) bg-gradient-to-t from-(--vscode-editor-background) to-transparent">
+        <div className="flex items-end gap-3">
           <textarea
             ref={textareaRef}
             value={inputValue}
@@ -280,24 +288,24 @@ const App: React.FC = () => {
             placeholder="输入消息... (⌘/Ctrl+Enter 发送)"
             disabled={isLoading}
             rows={1}
-            className="flex-1 min-h-[32px] max-h-[100px] resize-none bg-(--vscode-input-background) text-(--vscode-input-foreground) border border-(--vscode-input-border) rounded px-3 py-2 text-sm placeholder:text-(--vscode-input-placeholderForeground) focus:outline-none focus:border-(--vscode-focusBorder) disabled:opacity-50"
+            className="flex-1 min-h-[40px] max-h-[120px] resize-none bg-(--vscode-input-background) text-(--vscode-input-foreground) border border-(--vscode-input-border) rounded-xl px-4 py-3 text-sm placeholder:text-(--vscode-input-placeholderForeground) focus:outline-none focus:border-(--vscode-focusBorder) focus:ring-1 focus:ring-(--vscode-focusBorder) disabled:opacity-50 transition-all shadow-sm"
           />
           {!isLoading ? (
             <button
               onClick={handleSend}
               disabled={!inputValue.trim()}
               title="发送消息"
-              className="h-9 w-9 shrink-0 flex items-center justify-center bg-(--vscode-button-background) text-(--vscode-button-foreground) rounded hover:bg-(--vscode-button-hoverBackground) disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="h-10 w-10 shrink-0 flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:scale-105 disabled:hover:scale-100"
             >
-              <Send size={16} />
+              <Send size={18} />
             </button>
           ) : (
             <button
               onClick={handleStop}
               title="停止生成"
-              className="h-9 w-9 shrink-0 flex items-center justify-center bg-(--vscode-inputValidation-errorBackground) text-white rounded hover:opacity-80 transition-opacity"
+              className="h-10 w-10 shrink-0 flex items-center justify-center bg-gradient-to-br from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all shadow-lg hover:scale-105"
             >
-              <Square size={16} fill="currentColor" />
+              <Square size={18} fill="currentColor" />
             </button>
           )}
         </div>
@@ -310,30 +318,52 @@ const App: React.FC = () => {
 const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
   const isUser = message.role === "user";
   const isError = message.content.startsWith("❌");
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(message.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
-    <div className={`flex gap-2 ${isUser ? "flex-row-reverse" : ""}`}>
+    <div
+      className={`flex gap-3 ${
+        isUser ? "flex-row-reverse" : ""
+      } group animate-in fade-in slide-in-from-bottom-2 duration-300`}
+    >
       <div
-        className={`w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-xs font-semibold ${
+        className={`w-8 h-8 shrink-0 rounded-xl flex items-center justify-center text-xs font-bold shadow-sm ${
           isUser
-            ? "bg-(--vscode-button-background) text-(--vscode-button-foreground)"
+            ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
             : isError
-            ? "bg-(--vscode-inputValidation-errorBackground) text-white"
-            : "bg-(--vscode-button-secondaryBackground) text-(--vscode-button-secondaryForeground)"
+            ? "bg-gradient-to-br from-red-500 to-red-600 text-white"
+            : "bg-gradient-to-br from-purple-500 to-purple-600 text-white"
         }`}
       >
         {isUser ? "U" : isError ? "⚠" : "AI"}
       </div>
-      <div className="flex flex-col gap-1 max-w-[80%]">
+      <div className="flex flex-col gap-1.5 max-w-[85%] flex-1">
         <div
-          className={`px-3 py-2 text-sm leading-relaxed rounded-lg ${
+          className={`relative px-4 py-3 text-sm leading-relaxed rounded-2xl shadow-sm ${
             isUser
-              ? "bg-(--vscode-button-background) text-(--vscode-button-foreground)"
+              ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-br-md"
               : isError
-              ? "bg-(--vscode-inputValidation-errorBackground) bg-opacity-10 border border-(--vscode-inputValidation-errorBorder)"
-              : "bg-(--vscode-input-background) border border-(--vscode-panel-border)"
+              ? "bg-(--vscode-inputValidation-errorBackground) bg-opacity-10 border-2 border-(--vscode-inputValidation-errorBorder) rounded-bl-md"
+              : "bg-(--vscode-input-background) border border-(--vscode-panel-border) rounded-bl-md"
           }`}
         >
+          {/* 复制按钮 - 只对 AI 消息显示 */}
+          {!isUser && !isError && !message.isStreaming && (
+            <button
+              onClick={handleCopy}
+              title={copied ? "已复制" : "复制消息"}
+              className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-(--vscode-button-secondaryBackground) hover:bg-(--vscode-button-secondaryHoverBackground) text-(--vscode-button-secondaryForeground) rounded-lg transition-all hover:scale-105 shadow-sm"
+            >
+              {copied ? <Check size={14} /> : <Copy size={14} />}
+            </button>
+          )}
+
           <div className="markdown-content">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
@@ -441,7 +471,7 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
           )}
         </div>
         <span
-          className={`text-xs text-(--vscode-descriptionForeground) px-1 ${
+          className={`text-[11px] text-(--vscode-descriptionForeground) opacity-60 px-1 font-medium ${
             isUser ? "text-right" : "text-left"
           }`}
         >

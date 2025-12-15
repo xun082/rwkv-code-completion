@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { getConfig } from "./completionService";
 import * as cp from "child_process";
 import { promisify } from "util";
-import { siliconFlowService } from "./siliconFlowService";
+import { aiService } from "./services/AIService";
 
 const exec = promisify(cp.exec);
 
@@ -40,6 +40,9 @@ export class GitCommitPanelProvider implements vscode.WebviewViewProvider {
         case "getStatus":
           await this.sendGitStatus();
           break;
+        case "getConfig":
+          await this.sendGitConfig();
+          break;
         case "generateMessage":
           await this.generateCommitMessage();
           break;
@@ -48,6 +51,24 @@ export class GitCommitPanelProvider implements vscode.WebviewViewProvider {
           break;
       }
     });
+  }
+
+  private async sendGitConfig() {
+    const config = vscode.workspace.getConfiguration(
+      "rwkv-code-completion.git"
+    );
+    const commitTypes = config.get("commitTypes", []);
+    const useEmoji = config.get("useEmoji", false);
+
+    if (this._view) {
+      this._view.webview.postMessage({
+        type: "configUpdate",
+        config: {
+          commitTypes,
+          useEmoji,
+        },
+      });
+    }
   }
 
   // 解码 Git 文件名中的八进制转义
@@ -98,21 +119,34 @@ export class GitCommitPanelProvider implements vscode.WebviewViewProvider {
         if (!line) {
           return;
         }
-        const statusCode = line.substring(0, 2).trim();
+
+        // porcelain 格式：XY PATH
+        // X = staged 状态，Y = unstaged 状态
+        const stagedStatus = line[0];
+        const unstagedStatus = line[1];
         let file = line.substring(3);
 
         // 解码文件名
         file = this.decodeGitFileName(file);
 
-        if (statusCode === "M" || statusCode.includes("M")) {
-          status.modified.push(file);
-        } else if (statusCode === "A") {
-          status.added.push(file);
-        } else if (statusCode === "D") {
-          status.deleted.push(file);
-        } else if (statusCode === "R") {
-          status.renamed.push(file);
-        } else if (statusCode === "??") {
+        // 显示所有改动的文件（staged 或 unstaged）
+        if (stagedStatus === "M" || unstagedStatus === "M") {
+          if (!status.modified.includes(file)) {
+            status.modified.push(file);
+          }
+        } else if (stagedStatus === "A" || unstagedStatus === "A") {
+          if (!status.added.includes(file)) {
+            status.added.push(file);
+          }
+        } else if (stagedStatus === "D" || unstagedStatus === "D") {
+          if (!status.deleted.includes(file)) {
+            status.deleted.push(file);
+          }
+        } else if (stagedStatus === "R" || unstagedStatus === "R") {
+          if (!status.renamed.includes(file)) {
+            status.renamed.push(file);
+          }
+        } else if (line.startsWith("??")) {
           status.untracked.push(file);
         }
       });
@@ -132,10 +166,17 @@ export class GitCommitPanelProvider implements vscode.WebviewViewProvider {
       }
 
       const cwd = workspaceFolder.uri.fsPath;
-      const { stdout: stagedDiff } = await exec("git diff --cached", { cwd });
-      const { stdout: unstagedDiff } = await exec("git diff", { cwd });
 
-      return stagedDiff || unstagedDiff;
+      // 优先获取 staged 的 diff
+      const { stdout: stagedDiff } = await exec("git diff --cached", { cwd });
+
+      // 如果有 staged 的改动，只用 staged 的；否则用 unstaged 的
+      if (stagedDiff.trim()) {
+        return stagedDiff;
+      }
+
+      const { stdout: unstagedDiff } = await exec("git diff", { cwd });
+      return unstagedDiff;
     } catch (error) {
       console.error("获取 Git diff 失败:", error);
       return "";
@@ -162,9 +203,17 @@ export class GitCommitPanelProvider implements vscode.WebviewViewProvider {
       }
 
       const status = await this.getGitStatus();
-      const diff = await this.getGitDiff();
 
-      if (!status || (!diff && status.modified.length === 0)) {
+      // 检查是否有任何改动（staged、unstaged 或 untracked）
+      const hasChanges =
+        status &&
+        (status.modified.length > 0 ||
+          status.added.length > 0 ||
+          status.deleted.length > 0 ||
+          status.renamed.length > 0 ||
+          status.untracked.length > 0);
+
+      if (!hasChanges) {
         vscode.window.showWarningMessage("没有可提交的更改");
         if (this._view) {
           this._view.webview.postMessage({
@@ -175,12 +224,29 @@ export class GitCommitPanelProvider implements vscode.WebviewViewProvider {
         return;
       }
 
+      const diff = await this.getGitDiff();
+
+      // 如果没有 diff（可能只有 untracked 文件），生成文件列表说明
+      let diffContent = diff;
+      if (!diff || diff.trim() === "") {
+        const fileList = [
+          ...status!.added.map((f) => `A ${f}`),
+          ...status!.modified.map((f) => `M ${f}`),
+          ...status!.deleted.map((f) => `D ${f}`),
+          ...status!.renamed.map((f) => `R ${f}`),
+          ...status!.untracked.map((f) => `U ${f}`),
+        ].join("\n");
+        diffContent = `变更文件列表：\n${fileList}`;
+      }
+
       // 限制 diff 长度，避免请求过大
       const limitedDiff =
-        diff.length > 3000 ? diff.substring(0, 3000) + "\n..." : diff;
+        diffContent.length > 3000
+          ? diffContent.substring(0, 3000) + "\n..."
+          : diffContent;
 
-      // 使用 SiliconFlow 服务生成提交信息
-      const message = await siliconFlowService.generateGitCommit(limitedDiff);
+      // 使用 AI 服务生成提交信息（AI 自动识别类型）
+      const message = await aiService.generateGitCommit(limitedDiff);
 
       if (this._view) {
         this._view.webview.postMessage({

@@ -2,10 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { vscode } from "./vscode";
 import {
   FileText,
-  FilePlus,
-  FileX,
-  FileEdit,
-  File,
   Sparkles,
   Check,
   ChevronDown,
@@ -92,15 +88,15 @@ const GitCommit: React.FC = () => {
             ref={textareaRef as any}
             value={commitMessage}
             onChange={(e) => setCommitMessage(e.target.value)}
-            placeholder="消息 (按 ⌘ 在 main 提交)"
+            placeholder="AI 生成提交消息 (自动识别类型)"
             className="flex-1 h-[32px] bg-(--vscode-input-background) text-(--vscode-input-foreground) border border-(--vscode-input-border) px-3 py-1.5 text-[13px] focus:outline-none focus:border-(--vscode-focusBorder) placeholder:text-(--vscode-input-placeholderForeground) rounded"
           />
-          {/* AI 生成按钮 - 在输入框右边 */}
+
           <button
             onClick={handleGenerate}
             disabled={!hasChanges || isGenerating}
             className="w-[32px] h-[32px] bg-transparent text-(--vscode-foreground) border border-(--vscode-input-border) flex items-center justify-center rounded disabled:opacity-40 disabled:cursor-not-allowed hover:enabled:bg-(--vscode-toolbar-hoverBackground) transition-colors"
-            title="AI 生成提交信息"
+            title="AI 自动生成提交信息"
           >
             {isGenerating ? (
               <div className="flex gap-0.5">
@@ -168,90 +164,90 @@ const GitCommit: React.FC = () => {
             {status.added.map((file, i) => (
               <div
                 key={`added-${i}`}
-                className="h-[22px] px-2 flex items-center gap-1.5 text-[13px] hover:bg-(--vscode-list-hoverBackground) cursor-pointer"
+                className="h-[22px] px-2 flex items-center gap-2 text-[13px] hover:bg-(--vscode-list-hoverBackground) cursor-pointer"
               >
-                <FilePlus
-                  size={14}
-                  className="shrink-0 text-[#89d185]"
-                  strokeWidth={2}
-                />
-                <span className="flex-1 truncate text-(--vscode-list-activeSelectionForeground)">
-                  {file}
-                </span>
-                <span className="shrink-0 text-[11px] font-bold text-[#89d185] w-4 text-center">
+                <span className="shrink-0 text-[11px] font-semibold text-[#89d185] w-[14px] text-center">
                   A
+                </span>
+                <FileText
+                  size={16}
+                  className="shrink-0 opacity-60"
+                  strokeWidth={1.5}
+                />
+                <span className="flex-1 truncate text-(--vscode-foreground)">
+                  {file}
                 </span>
               </div>
             ))}
             {status.modified.map((file, i) => (
               <div
                 key={`modified-${i}`}
-                className="h-[22px] px-2 flex items-center gap-1.5 text-[13px] hover:bg-(--vscode-list-hoverBackground) cursor-pointer"
+                className="h-[22px] px-2 flex items-center gap-2 text-[13px] hover:bg-(--vscode-list-hoverBackground) cursor-pointer"
               >
-                <FileEdit
-                  size={14}
-                  className="shrink-0 text-[#e2c08d]"
-                  strokeWidth={2}
-                />
-                <span className="flex-1 truncate text-(--vscode-list-activeSelectionForeground)">
-                  {file}
-                </span>
-                <span className="shrink-0 text-[11px] font-bold text-[#e2c08d] w-4 text-center">
+                <span className="shrink-0 text-[11px] font-semibold text-[#e2c08d] w-[14px] text-center">
                   M
+                </span>
+                <FileText
+                  size={16}
+                  className="shrink-0 opacity-60"
+                  strokeWidth={1.5}
+                />
+                <span className="flex-1 truncate text-(--vscode-foreground)">
+                  {file}
                 </span>
               </div>
             ))}
             {status.deleted.map((file, i) => (
               <div
                 key={`deleted-${i}`}
-                className="h-[22px] px-2 flex items-center gap-1.5 text-[13px] hover:bg-(--vscode-list-hoverBackground) cursor-pointer"
+                className="h-[22px] px-2 flex items-center gap-2 text-[13px] hover:bg-(--vscode-list-hoverBackground) cursor-pointer"
               >
-                <FileX
-                  size={14}
-                  className="shrink-0 text-[#f48771]"
-                  strokeWidth={2}
-                />
-                <span className="flex-1 truncate text-(--vscode-list-activeSelectionForeground) line-through opacity-70">
-                  {file}
-                </span>
-                <span className="shrink-0 text-[11px] font-bold text-[#f48771] w-4 text-center">
+                <span className="shrink-0 text-[11px] font-semibold text-[#f48771] w-[14px] text-center">
                   D
+                </span>
+                <FileText
+                  size={16}
+                  className="shrink-0 opacity-60"
+                  strokeWidth={1.5}
+                />
+                <span className="flex-1 truncate text-(--vscode-foreground) opacity-70">
+                  {file}
                 </span>
               </div>
             ))}
             {status.renamed.map((file, i) => (
               <div
                 key={`renamed-${i}`}
-                className="h-[22px] px-2 flex items-center gap-1.5 text-[13px] hover:bg-(--vscode-list-hoverBackground) cursor-pointer"
+                className="h-[22px] px-2 flex items-center gap-2 text-[13px] hover:bg-(--vscode-list-hoverBackground) cursor-pointer"
               >
-                <FileText
-                  size={14}
-                  className="shrink-0 text-[#73c991]"
-                  strokeWidth={2}
-                />
-                <span className="flex-1 truncate text-(--vscode-list-activeSelectionForeground)">
-                  {file}
-                </span>
-                <span className="shrink-0 text-[11px] font-bold text-[#73c991] w-4 text-center">
+                <span className="shrink-0 text-[11px] font-semibold text-[#73c991] w-[14px] text-center">
                   R
+                </span>
+                <FileText
+                  size={16}
+                  className="shrink-0 opacity-60"
+                  strokeWidth={1.5}
+                />
+                <span className="flex-1 truncate text-(--vscode-foreground)">
+                  {file}
                 </span>
               </div>
             ))}
             {status.untracked.map((file, i) => (
               <div
                 key={`untracked-${i}`}
-                className="h-[22px] px-2 flex items-center gap-1.5 text-[13px] hover:bg-(--vscode-list-hoverBackground) cursor-pointer"
+                className="h-[22px] px-2 flex items-center gap-2 text-[13px] hover:bg-(--vscode-list-hoverBackground) cursor-pointer"
               >
-                <File
-                  size={14}
-                  className="shrink-0 text-(--vscode-descriptionForeground)"
-                  strokeWidth={2}
-                />
-                <span className="flex-1 truncate text-(--vscode-list-activeSelectionForeground) opacity-90">
-                  {file}
+                <span className="shrink-0 text-[11px] font-semibold text-[#73c991] w-[14px] text-center">
+                  U
                 </span>
-                <span className="shrink-0 text-[11px] font-bold text-(--vscode-descriptionForeground) w-4 text-center opacity-60">
-                  ?
+                <FileText
+                  size={16}
+                  className="shrink-0 opacity-60"
+                  strokeWidth={1.5}
+                />
+                <span className="flex-1 truncate text-(--vscode-foreground)">
+                  {file}
                 </span>
               </div>
             ))}
