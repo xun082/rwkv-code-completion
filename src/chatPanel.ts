@@ -29,7 +29,7 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
     webviewView.webview.onDidReceiveMessage(async (data) => {
       switch (data.type) {
         case "sendMessage":
-          await this.handleSendMessage(data.message);
+          await this.handleSendMessage(data.message, data.context);
           break;
         case "clearHistory":
           this.handleClearHistory();
@@ -41,7 +41,7 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
     });
   }
 
-  private async handleSendMessage(message: string) {
+  private async handleSendMessage(message: string, context?: ChatMessage[]) {
     if (!this._view) {
       return;
     }
@@ -60,7 +60,7 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
     try {
       this.abortController = new AbortController();
       
-      // 使用流式输出
+      // 使用流式输出，传递前端提供的上下文
       await this.chatService.sendMessage(
         message,
         (chunk: string) => {
@@ -72,7 +72,8 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
             });
           }
         },
-        this.abortController.signal
+        this.abortController.signal,
+        context // 使用前端传递的上下文消息（最近5条）
       );
 
       // 流式输出完成
@@ -148,21 +149,9 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
 <body>
     <div id="root"></div>
     <script>
-        console.log('[Chat Panel] ===== START (rsbuild) =====');
-        console.log('[Chat Panel] Setting VIEW_TYPE to chat');
         window.__VIEW_TYPE__ = 'chat';
-        console.log('[Chat Panel] VIEW_TYPE is:', window.__VIEW_TYPE__);
-        console.log('[Chat Panel] Root element:', document.getElementById('root'));
-        console.log('[Chat Panel] About to load script from:', '${scriptUri}');
-        
-        // 添加错误监听
-        window.addEventListener('error', function(e) {
-            console.error('[Chat Panel] Error:', e.error);
-        });
-        
-        console.log('[Chat Panel] ===== HTML READY =====');
     </script>
-    <script src="${scriptUri}" onerror="console.error('[Chat Panel] Failed to load script')"></script>
+    <script src="${scriptUri}"></script>
 </body>
 </html>`;
   }

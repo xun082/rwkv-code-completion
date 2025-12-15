@@ -89,18 +89,11 @@ export class SiliconFlowService {
       const data: SiliconFlowResponse = await response.json();
 
       if (data.choices && data.choices.length > 0) {
-        const content = data.choices[0].message.content;
-        console.log(
-          `[SiliconFlow] 请求成功，使用 tokens: ${
-            data.usage?.total_tokens || "N/A"
-          }`
-        );
-        return content;
+        return data.choices[0].message.content;
       }
 
       throw new Error("SiliconFlow API 返回数据格式错误");
     } catch (error) {
-      console.error("[SiliconFlow] 请求失败:", error);
       throw error;
     }
   }
@@ -115,6 +108,7 @@ export class SiliconFlowService {
       model?: "qwen" | "deepseek" | "qwenVL";
       temperature?: number;
       maxTokens?: number;
+      signal?: AbortSignal;
     }
   ): Promise<void> {
     const model = options?.model || "deepseek";
@@ -142,6 +136,7 @@ export class SiliconFlowService {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(requestBody),
+        signal: options?.signal, // 支持中止请求
       });
 
       if (!response.ok) {
@@ -165,16 +160,13 @@ export class SiliconFlowService {
         const { done, value } = await reader.read();
 
         if (done) {
-          console.log("[SiliconFlow] 流式输出完成");
           break;
         }
 
-        // 解码数据块
         buffer += decoder.decode(value, { stream: true });
 
-        // 处理 SSE 格式数据
         const lines = buffer.split("\n");
-        buffer = lines.pop() || ""; // 保留不完整的行
+        buffer = lines.pop() || "";
 
         for (const line of lines) {
           const trimmedLine = line.trim();
@@ -185,22 +177,17 @@ export class SiliconFlowService {
 
           if (trimmedLine.startsWith("data: ")) {
             try {
-              const jsonStr = trimmedLine.slice(6); // 移除 "data: " 前缀
+              const jsonStr = trimmedLine.slice(6);
               const data = JSON.parse(jsonStr);
-
-              // 提取内容
               const content = data.choices?.[0]?.delta?.content;
               if (content) {
-                onChunk(content); // 调用回调函数，逐块返回内容
+                onChunk(content);
               }
-            } catch (e) {
-              console.error("[SiliconFlow] 解析流数据失败:", e);
-            }
+            } catch {}
           }
         }
       }
     } catch (error) {
-      console.error("[SiliconFlow] 流式请求失败:", error);
       throw error;
     }
   }
@@ -279,7 +266,8 @@ export class SiliconFlowService {
   async sendMessageStream(
     userMessage: string,
     onChunk: (text: string) => void,
-    conversationHistory?: SiliconFlowMessage[]
+    conversationHistory?: SiliconFlowMessage[],
+    signal?: AbortSignal
   ): Promise<void> {
     const messages: SiliconFlowMessage[] = [
       {
@@ -298,6 +286,7 @@ export class SiliconFlowService {
       model: "deepseek",
       temperature: 0.7,
       maxTokens: 4096,
+      signal,
     });
   }
 }

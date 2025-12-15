@@ -17,7 +17,6 @@ declare global {
 // 获取或创建 VSCode API 实例
 export function getVSCodeAPI(): VSCodeAPI {
   if (!window.__vscodeApi__) {
-    console.log("[VSCode API] 首次获取 VSCode API");
     window.__vscodeApi__ = window.acquireVsCodeApi();
   }
   return window.__vscodeApi__;

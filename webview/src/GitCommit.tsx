@@ -20,11 +20,7 @@ interface GitStatus {
   untracked: string[];
 }
 
-console.log("[Git Commit] Initializing...");
-
 const GitCommit: React.FC = () => {
-  console.log("[Git Commit] Component rendering");
-
   const [status, setStatus] = useState<GitStatus | null>(null);
   const [commitMessage, setCommitMessage] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);

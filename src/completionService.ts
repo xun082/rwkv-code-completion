@@ -49,20 +49,9 @@ export function getConfig(): CompletionConfig {
 
 // 代码补全服务类
 export class CompletionService {
-  // 日志辅助函数
-  private log(message: string, data?: any) {
-    console.log(`[RWKV] ${message}`);
-    if (data !== undefined) {
-      console.log(JSON.stringify(data, null, 2));
-    }
-  }
-
-  private logError(message: string, error?: any) {
-    console.error(`[RWKV ERROR] ${message}`);
-    if (error !== undefined) {
-      console.error(error);
-    }
-  }
+  // 日志辅助函数（已禁用）
+  private log(message: string, data?: any) {}
+  private logError(message: string, error?: any) {}
 
   // 构建代码补全 prompt
   buildPrompt(prefix: string, suffix: string, languageId: string): string {
@@ -114,19 +103,6 @@ export class CompletionService {
       password: config.password,
     };
 
-    this.log("=== RWKV 代码补全请求 ===");
-    this.log("🌐 URL: " + url);
-    this.log("\n📝 Prompt (最后200字符):");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log(prompt.slice(-200));
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-    this.log("⚙️ 生成参数:", {
-      max_tokens: body.max_tokens,
-      temperature: body.temperature,
-      top_p: body.top_p,
-      alpha_presence: body.alpha_presence,
-      alpha_frequency: body.alpha_frequency,
-    });
 
     try {
       this.log("开始发送请求...");

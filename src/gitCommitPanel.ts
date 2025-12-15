@@ -57,22 +57,22 @@ export class GitCommitPanelProvider implements vscode.WebviewViewProvider {
     if (fileName.startsWith('"') && fileName.endsWith('"')) {
       // 移除首尾引号
       fileName = fileName.slice(1, -1);
-      
+
       // 将八进制转义序列转换为实际字符
       // \350\257\246 -> 详
       fileName = fileName.replace(/\\(\d{3})/g, (match, octal) => {
         return String.fromCharCode(parseInt(octal, 8));
       });
-      
+
       // 处理其他转义字符
       fileName = fileName
-        .replace(/\\n/g, '\n')
-        .replace(/\\t/g, '\t')
-        .replace(/\\r/g, '\r')
-        .replace(/\\\\/g, '\\')
+        .replace(/\\n/g, "\n")
+        .replace(/\\t/g, "\t")
+        .replace(/\\r/g, "\r")
+        .replace(/\\\\/g, "\\")
         .replace(/\\"/g, '"');
     }
-    
+
     return fileName;
   }
 
@@ -100,7 +100,7 @@ export class GitCommitPanelProvider implements vscode.WebviewViewProvider {
         }
         const statusCode = line.substring(0, 2).trim();
         let file = line.substring(3);
-        
+
         // 解码文件名
         file = this.decodeGitFileName(file);
 
@@ -180,7 +180,6 @@ export class GitCommitPanelProvider implements vscode.WebviewViewProvider {
         diff.length > 3000 ? diff.substring(0, 3000) + "\n..." : diff;
 
       // 使用 SiliconFlow 服务生成提交信息
-      console.log("[Git Commit] 正在使用 SiliconFlow AI 生成提交信息...");
       const message = await siliconFlowService.generateGitCommit(limitedDiff);
 
       if (this._view) {
@@ -193,8 +192,6 @@ export class GitCommitPanelProvider implements vscode.WebviewViewProvider {
           isGenerating: false,
         });
       }
-
-      console.log("[Git Commit] AI 生成完成");
     } catch (error: any) {
       console.error("[Git Commit] 生成失败:", error);
       vscode.window.showErrorMessage(`生成提交信息失败: ${error.message}`);
@@ -277,21 +274,9 @@ export class GitCommitPanelProvider implements vscode.WebviewViewProvider {
 <body>
     <div id="root"></div>
     <script>
-        console.log('[Git Panel] ===== START (rsbuild) =====');
-        console.log('[Git Panel] Setting VIEW_TYPE to git');
         window.__VIEW_TYPE__ = 'git';
-        console.log('[Git Panel] VIEW_TYPE is:', window.__VIEW_TYPE__);
-        console.log('[Git Panel] Root element:', document.getElementById('root'));
-        console.log('[Git Panel] About to load script from:', '${scriptUri}');
-        
-        // 添加错误监听
-        window.addEventListener('error', function(e) {
-            console.error('[Git Panel] Error:', e.error);
-        });
-        
-        console.log('[Git Panel] ===== HTML READY =====');
     </script>
-    <script src="${scriptUri}" onerror="console.error('[Git Panel] Failed to load script')"></script>
+    <script src="${scriptUri}"></script>
 </body>
 </html>`;
   }

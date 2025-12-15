@@ -13,52 +13,52 @@ export class ChatService {
   async sendMessage(
     userMessage: string,
     onChunk?: (chunk: string) => void,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    contextMessages?: ChatMessage[]
   ): Promise<string> {
-    // 添加用户消息到历史
-    this.conversationHistory.push({
-      role: "user",
-      content: userMessage,
-      timestamp: Date.now(),
-    });
-
-    // 构建消息历史（保留最近10轮对话）
-    const recentHistory = this.conversationHistory.slice(-20);
-
     try {
-      console.log("[Chat] 正在使用 SiliconFlow AI 流式回复...");
+      // 使用前端传递的上下文，如果没有则使用本地历史记录
+      const historyToUse =
+        contextMessages && contextMessages.length > 0
+          ? contextMessages
+          : this.conversationHistory.slice(-20);
 
       let fullMessage = "";
 
-      // 使用流式输出
       await siliconFlowService.sendMessageStream(
         userMessage,
         (chunk: string) => {
           fullMessage += chunk;
           if (onChunk) {
-            onChunk(chunk); // 实时回调每个文本块
+            onChunk(chunk);
           }
         },
-        recentHistory.slice(0, -1).map((msg) => ({
+        historyToUse.map((msg) => ({
           role: msg.role as "user" | "assistant" | "system",
           content: msg.content,
-        }))
+        })),
+        signal
       );
 
-      // 添加完整的助手回复到历史
-      this.conversationHistory.push({
-        role: "assistant",
-        content: fullMessage,
-        timestamp: Date.now(),
-      });
+      // 保存到本地历史（用于后备）
+      this.conversationHistory.push(
+        {
+          role: "user",
+          content: userMessage,
+          timestamp: Date.now(),
+        },
+        {
+          role: "assistant",
+          content: fullMessage,
+          timestamp: Date.now(),
+        }
+      );
 
-      console.log("[Chat] AI 流式回复完成");
       return fullMessage;
     } catch (error: any) {
       if (error.name === "AbortError") {
         throw error;
       }
-      console.error("[Chat] AI 回复错误:", error);
       throw new Error(`聊天请求失败: ${error.message}`);
     }
   }

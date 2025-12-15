@@ -14,11 +14,7 @@ const MainApp: React.FC = () => {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    console.log("[MainApp] ===== 组件挂载 =====");
-    console.log("[MainApp] window.__VIEW_TYPE__:", window.__VIEW_TYPE__);
-
     const type = window.__VIEW_TYPE__ || "chat";
-    console.log("[MainApp] 设置视图类型:", type);
     setViewType(type);
     setIsReady(true);
   }, []);
@@ -36,8 +32,6 @@ const MainApp: React.FC = () => {
       </div>
     );
   }
-
-  console.log("[MainApp] 渲染视图:", viewType);
 
   // 根据 VIEW_TYPE 渲染对应组件
   if (viewType === "git") {

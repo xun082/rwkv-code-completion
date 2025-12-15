@@ -218,28 +218,19 @@ class RWKVCompletionProvider implements vscode.InlineCompletionItemProvider {
   ): Promise<vscode.InlineCompletionItem[] | null> {
     const config = getConfig();
 
-    console.log("[RWKV] 触发补全", {
-      file: document.fileName,
-      line: position.line,
-      language: document.languageId,
-    });
-
     if (!config.enabled) {
-      console.log("[RWKV] 补全已禁用");
       return null;
     }
 
     // 防抖处理
     const now = Date.now();
     if (now - this.lastTriggerTime < config.debounceDelay) {
-      console.log("[RWKV] 防抖跳过");
       return null;
     }
     this.lastTriggerTime = now;
 
     // 取消之前的请求
     if (this.abortController) {
-      console.log("[RWKV] 取消之前的请求");
       this.abortController.abort();
     }
     this.abortController = new AbortController();
@@ -250,14 +241,8 @@ class RWKVCompletionProvider implements vscode.InlineCompletionItemProvider {
       const suffix = this.getSuffix(document, position);
       const languageId = document.languageId;
 
-      console.log("[RWKV] 上下文:", {
-        prefixLength: prefix.length,
-        suffixLength: suffix.length,
-      });
-
       // 如果前文太短，不触发补全
       if (prefix.trim().length < 10) {
-        console.log("[RWKV] 前文太短");
         return null;
       }
 
@@ -271,11 +256,8 @@ class RWKVCompletionProvider implements vscode.InlineCompletionItemProvider {
       );
 
       if (!completion) {
-        console.log("[RWKV] API 返回空");
         return null;
       }
-
-      console.log("[RWKV] 补全成功，长度:", completion.length);
 
       // 返回补全项
       const item = new vscode.InlineCompletionItem(
@@ -286,10 +268,8 @@ class RWKVCompletionProvider implements vscode.InlineCompletionItemProvider {
       return [item];
     } catch (error: any) {
       if (error.name === "AbortError") {
-        console.log("[RWKV] 请求被取消");
         return null;
       }
-      console.error("[RWKV ERROR] 补全错误:", error);
       return null;
     }
   }
@@ -342,8 +322,6 @@ function updateStatusBar() {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log("RWKV 代码补全插件已激活");
-
   // 创建控制面板提供者（Webview）
   const controlPanelProvider = new ControlPanelProvider(context.extensionUri);
   context.subscriptions.push(
@@ -612,6 +590,4 @@ export function activate(context: vscode.ExtensionContext) {
   );
 }
 
-export function deactivate() {
-  console.log("RWKV 代码补全插件已停用");
-}
+export function deactivate() {}
