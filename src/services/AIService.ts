@@ -35,37 +35,113 @@ export class AIService {
    * 辅助方法：生成 Git 提交信息
    */
   async generateGitCommit(diff: string): Promise<string> {
-    const systemPrompt = `你是一个专业的 Git 提交信息生成助手。
-请根据提供的 Git diff 内容，自动识别提交类型并生成规范的提交信息。
+    const systemPrompt = `你是 Git 提交消息生成专家。`;
 
-提交类型：
-- feat: 新功能
-- fix: 修复问题
-- docs: 文档更新
-- style: 代码格式（不影响功能）
-- refactor: 重构（不是新功能也不是修复）
-- perf: 性能优化
-- test: 测试相关
-- build: 构建相关
-- ci: CI/CD 相关
-- chore: 其他杂项
+    const userPrompt = `请根据下面的代码改动（diff），生成一行 Git 提交消息。
 
-要求：
-1. 返回格式：类型: 描述（例如："feat: 添加用户登录功能"）
-2. 根据改动内容自动选择最合适的类型
-3. 描述使用中文，简洁明了，不超过 50 字
-4. 直接返回完整的提交消息，不要其他格式
-5. 不要包含 markdown 格式或代码块`;
+【重要】直接输出提交消息，格式：类型: 描述
+
+类型必须是以下之一：feat、fix、docs、style、refactor、perf、test、chore
+
+示例输出：
+feat: 添加用户登录功能
+fix: 修复内存泄漏问题
+chore: 更新依赖配置
+
+【代码改动如下】
+${diff}
+
+【请直接输出一行提交消息】`;
 
     const messages: AIMessage[] = [
       { role: "system", content: systemPrompt },
-      { role: "user", content: `请分析以下 Git diff 并生成提交消息：\n\n${diff}` },
+      { role: "user", content: userPrompt },
     ];
 
-    return this.chat(messages, {
+    const result = await this.chat(messages, {
       temperature: 0.7,
       maxTokens: 200,
+      topP: 0.3,
+      topK: 1,
+      enableThink: false,
     });
+
+    let cleanResult = result.trim();
+
+    cleanResult = cleanResult.replace(/>[\s\S]*?<\/think>\s*/g, "");
+    if (cleanResult.includes("</think>")) {
+      const thinkEndIndex = cleanResult.indexOf("</think>");
+      cleanResult = cleanResult.substring(thinkEndIndex + 8).trim();
+    }
+
+    const allLines = cleanResult.split("\n");
+    let commitMessage = "";
+
+    for (const line of allLines) {
+      const trimmed = line.trim();
+
+      if (!trimmed) {
+        continue;
+      }
+      if (trimmed.startsWith(">")) {
+        continue;
+      }
+      if (trimmed.startsWith("-") || trimmed.startsWith("*")) {
+        continue;
+      }
+      if (
+        trimmed.match(
+          /^(分析|说明|类型|描述|关键词|符合规范|任务|格式|示例|要求)[:：]/i
+        )
+      ) {
+        continue;
+      }
+      if (
+        trimmed.match(
+          /^(import|export|const|let|var|function|class|\/\/|\/\*|\{|\})/i
+        )
+      ) {
+        continue;
+      }
+      if (trimmed.startsWith("```") || trimmed.startsWith("`")) {
+        continue;
+      }
+
+      if (trimmed.match(/^(feat|fix|docs|style|refactor|perf|test|chore):/i)) {
+        commitMessage = trimmed;
+        break;
+      }
+
+      if (!commitMessage && trimmed.length >= 5 && trimmed.length <= 100) {
+        commitMessage = trimmed;
+      }
+    }
+
+    if (!commitMessage) {
+      throw new Error("无法生成有效的提交消息，请检查代码改动");
+    }
+
+    let finalMessage = commitMessage
+      .replace(/^[#*`\-]+\s*/, "")
+      .replace(/[`\-]+$/, "")
+      .replace(/^(提交消息|git\s+commit)[:：]\s*/i, "")
+      .trim();
+
+    if (
+      !finalMessage.match(/^(feat|fix|docs|style|refactor|perf|test|chore):/i)
+    ) {
+      if (finalMessage.length >= 3 && finalMessage.length <= 100) {
+        finalMessage = "chore: " + finalMessage.replace(/^[:：]\s*/, "");
+      } else {
+        throw new Error("生成的提交消息格式不正确");
+      }
+    }
+
+    if (finalMessage.length > 72) {
+      finalMessage = finalMessage.substring(0, 69) + "...";
+    }
+
+    return finalMessage;
   }
 
   /**
@@ -80,16 +156,17 @@ export class AIService {
     const messages: AIMessage[] = [
       {
         role: "system",
-        content:
-          "你是一个专业的 AI 编程助手。用简洁、清晰的中文回答问题。",
+        content: "你是一个专业的 AI 编程助手。用简洁、清晰的中文回答问题。",
       },
       ...(conversationHistory || []),
       { role: "user", content: userMessage },
     ];
 
     await this.chatStream(messages, onChunk, {
-      temperature: 0.7,
-      maxTokens: 4096,
+      temperature: 1.0, // RWKV 推荐值
+      maxTokens: 8192, // 增加到 8192，支持更长的回复
+      topP: 0.3, // RWKV 推荐值
+      topK: 1, // RWKV 推荐值
       signal,
     });
   }
@@ -100,8 +177,8 @@ function createProvider(): RWKVLocalProvider {
   const config = vscode.workspace.getConfiguration("rwkv-code-completion");
   const baseUrl =
     config.get<string>("chat.baseUrl") ||
-    "http://192.168.0.82:8001/v3/chat/completions";
-  const password = config.get<string>("chat.password") || "rwkv7_7.2b";
+    "http://192.168.0.12:8000/v1/chat/completions";
+  const password = config.get<string>("chat.password") || "rwkv7_7.2b_webgen";
 
   return new RWKVLocalProvider({
     baseUrl,
@@ -110,4 +187,3 @@ function createProvider(): RWKVLocalProvider {
 }
 
 export const aiService = new AIService(createProvider());
-

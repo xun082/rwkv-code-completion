@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
+import rehypeRaw from "rehype-raw";
 import { Message } from "./types";
 import { vscode } from "./vscode";
 import { Trash2, Send, Square, Copy, Check } from "lucide-react";
@@ -9,6 +10,47 @@ import "highlight.js/styles/github-dark.css";
 
 const STORAGE_KEY = "rwkv-chat-messages";
 const MAX_CONTEXT_MESSAGES = 5;
+
+// 处理 RWKV 深度思考模式标记
+const processThinkTags = (content: string): string => {
+  // RWKV 思考格式：>思考内容...</think>
+  
+  // 调试：完整内容
+  if (content.includes('</think>')) {
+    console.log('[processThinkTags] ==== 完整内容 ====');
+    console.log(content);
+    console.log('[processThinkTags] ==== 结束 ====');
+  }
+  
+  // 测试不同的正则模式
+  const patterns = [
+    />([\s\S]*?)<\/think>/g,  // 当前模式
+    /&gt;([\s\S]*?)<\/think>/g,  // HTML 转义的 >
+    />([^<]*)<\/think>/g,  // 不跨标签
+  ];
+  
+  let processed = content;
+  let matched = false;
+  
+  for (let i = 0; i < patterns.length; i++) {
+    const testMatch = content.match(patterns[i]);
+    if (testMatch) {
+      console.log(`[processThinkTags] 模式 ${i} 匹配成功:`, testMatch);
+      processed = content.replace(patterns[i], (match, thinkContent) => {
+        console.log('[processThinkTags] 替换内容:', thinkContent.substring(0, 100));
+        return `<span class="rwkv-think">&gt;${thinkContent}</span>`;
+      });
+      matched = true;
+      break;
+    }
+  }
+  
+  if (content.includes('</think>') && !matched) {
+    console.warn('[processThinkTags] 警告：检测到 </think> 但所有模式都未匹配');
+  }
+  
+  return processed;
+};
 
 // 获取上下文消息（只取最近5条有效消息）
 const getContextMessages = (messages: Message[]): Message[] => {
@@ -367,7 +409,7 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
           <div className="markdown-content">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeHighlight]}
+              rehypePlugins={[rehypeRaw, rehypeHighlight]}
               components={{
                 pre: ({ node, ...props }) => (
                   <pre
@@ -463,7 +505,7 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
                 ),
               }}
             >
-              {message.content}
+              {processThinkTags(message.content)}
             </ReactMarkdown>
           </div>
           {message.isStreaming && (

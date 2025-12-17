@@ -16,6 +16,7 @@ export interface ChatOptions {
   frequencyPenalty?: number;
   stopTokens?: (string | number)[];
   signal?: AbortSignal;
+  enableThink?: boolean; // 是否启用深度思考（RWKV 特有）
 }
 
 export interface AIServiceProvider {

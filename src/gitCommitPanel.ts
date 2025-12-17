@@ -167,16 +167,45 @@ export class GitCommitPanelProvider implements vscode.WebviewViewProvider {
 
       const cwd = workspaceFolder.uri.fsPath;
 
-      // 优先获取 staged 的 diff
+      // 1. 获取 staged 的 diff
       const { stdout: stagedDiff } = await exec("git diff --cached", { cwd });
 
-      // 如果有 staged 的改动，只用 staged 的；否则用 unstaged 的
-      if (stagedDiff.trim()) {
-        return stagedDiff;
+      // 2. 获取 unstaged 的 diff
+      const { stdout: unstagedDiff } = await exec("git diff", { cwd });
+
+      // 3. 获取 untracked 文件内容
+      const { stdout: untrackedFiles } = await exec(
+        "git ls-files --others --exclude-standard",
+        { cwd }
+      );
+      const untrackedList = untrackedFiles
+        .trim()
+        .split("\n")
+        .filter((f) => f);
+
+      let untrackedContent = "";
+      if (untrackedList.length > 0) {
+        for (const file of untrackedList.slice(0, 10)) {
+          try {
+            const { stdout: fileContent } = await exec(
+              `git diff --no-index /dev/null "${file}"`,
+              { cwd }
+            );
+            untrackedContent += fileContent + "\n";
+          } catch (err: any) {
+            // git diff --no-index 会返回非 0 退出码，但 stdout 仍包含 diff
+            if (err.stdout) {
+              untrackedContent += err.stdout + "\n";
+            }
+          }
+        }
       }
 
-      const { stdout: unstagedDiff } = await exec("git diff", { cwd });
-      return unstagedDiff;
+      const allDiffs = [stagedDiff, unstagedDiff, untrackedContent]
+        .filter((d) => d.trim())
+        .join("\n\n");
+
+      return allDiffs;
     } catch (error) {
       console.error("获取 Git diff 失败:", error);
       return "";
@@ -226,26 +255,28 @@ export class GitCommitPanelProvider implements vscode.WebviewViewProvider {
 
       const diff = await this.getGitDiff();
 
-      // 如果没有 diff（可能只有 untracked 文件），生成文件列表说明
-      let diffContent = diff;
+      // 如果 diff 为空，说明没有任何改动
       if (!diff || diff.trim() === "") {
-        const fileList = [
-          ...status!.added.map((f) => `A ${f}`),
-          ...status!.modified.map((f) => `M ${f}`),
-          ...status!.deleted.map((f) => `D ${f}`),
-          ...status!.renamed.map((f) => `R ${f}`),
-          ...status!.untracked.map((f) => `U ${f}`),
-        ].join("\n");
-        diffContent = `变更文件列表：\n${fileList}`;
+        vscode.window.showWarningMessage("没有可分析的代码改动");
+        if (this._view) {
+          this._view.webview.postMessage({
+            type: "generating",
+            isGenerating: false,
+          });
+        }
+        return;
       }
 
       // 限制 diff 长度，避免请求过大
+      // 增加限制到 6000 字符，以便包含更多上下文
       const limitedDiff =
-        diffContent.length > 3000
-          ? diffContent.substring(0, 3000) + "\n..."
-          : diffContent;
+        diff.length > 6000
+          ? diff.substring(0, 6000) +
+            "\n\n... (内容已截断，共 " +
+            diff.length +
+            " 字符)"
+          : diff;
 
-      // 使用 AI 服务生成提交信息（AI 自动识别类型）
       const message = await aiService.generateGitCommit(limitedDiff);
 
       if (this._view) {
@@ -260,7 +291,16 @@ export class GitCommitPanelProvider implements vscode.WebviewViewProvider {
       }
     } catch (error: any) {
       console.error("[Git Commit] 生成失败:", error);
-      vscode.window.showErrorMessage(`生成提交信息失败: ${error.message}`);
+
+      // 提供更友好的错误信息
+      let errorMsg = error.message || "未知错误";
+      if (errorMsg.includes("fetch")) {
+        errorMsg = "无法连接到 RWKV 服务，请检查服务是否运行";
+      } else if (errorMsg.includes("AbortError")) {
+        errorMsg = "生成已取消";
+      }
+
+      vscode.window.showErrorMessage(`生成提交信息失败: ${errorMsg}`);
       if (this._view) {
         this._view.webview.postMessage({
           type: "generating",
@@ -280,13 +320,28 @@ export class GitCommitPanelProvider implements vscode.WebviewViewProvider {
         return;
       }
 
+      // 验证消息格式
+      if (!message || message.trim().length === 0) {
+        vscode.window.showErrorMessage("提交消息不能为空");
+        return;
+      }
+
+      // 清理消息：移除多余空格和换行
+      const cleanMessage = message.trim().replace(/\s+/g, " ");
+
       const cwd = workspaceFolder.uri.fsPath;
 
       // 添加所有更改
       await exec("git add -A", { cwd });
 
-      // 提交
-      await exec(`git commit -m "${message.replace(/"/g, '\\"')}"`, { cwd });
+      // 转义双引号和反斜杠
+      const escapedMessage = cleanMessage
+        .replace(/\\/g, "\\\\")
+        .replace(/"/g, '\\"')
+        .replace(/\$/g, "\\$")
+        .replace(/`/g, "\\`");
+
+      await exec(`git commit -m "${escapedMessage}"`, { cwd });
 
       vscode.window.showInformationMessage("✅ 提交成功！");
 
@@ -300,6 +355,7 @@ export class GitCommitPanelProvider implements vscode.WebviewViewProvider {
         });
       }
     } catch (error: any) {
+      console.error("[Git Commit] 提交失败:", error);
       vscode.window.showErrorMessage(`提交失败: ${error.message}`);
     }
   }

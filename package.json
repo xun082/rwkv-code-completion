@@ -139,7 +139,7 @@
         },
         "rwkv-code-completion.endpoint": {
           "type": "string",
-          "default": "http://192.168.0.12:8000/v3/chat/completions",
+          "default": "http://192.168.0.12:8000/v1/chat/completions",
           "description": "RWKV 服务端点地址"
         },
         "rwkv-code-completion.password": {
@@ -185,12 +185,12 @@
         },
         "rwkv-code-completion.chat.baseUrl": {
           "type": "string",
-          "default": "http://192.168.0.82:8001/v3/chat/completions",
+          "default": "http://192.168.0.12:8000/v1/chat/completions",
           "description": "AI 聊天服务地址"
         },
         "rwkv-code-completion.chat.password": {
           "type": "string",
-          "default": "rwkv7_7.2b",
+          "default": "rwkv7_7.2b_webgen",
           "description": "AI 聊天服务密码"
         },
         "rwkv-code-completion.git.commitTypes": {
@@ -304,6 +304,7 @@
     "react-dom": "^19.2.1",
     "react-markdown": "^10.1.0",
     "rehype-highlight": "^7.0.2",
+    "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.1",
     "tailwind-merge": "^3.4.0"
   }

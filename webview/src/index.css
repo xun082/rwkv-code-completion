@@ -901,3 +901,16 @@
   -webkit-user-select: text;
   user-select: text;
 }
+
+/* RWKV 思考模式样式 - 用浅色渲染思考内容 */
+.rwkv-think {
+  opacity: 0.5 !important;
+  font-style: italic !important;
+  font-size: 0.9em !important;
+  color: var(--vscode-descriptionForeground) !important;
+  display: inline-block !important;
+  background: rgba(128, 128, 128, 0.1) !important;
+  padding: 2px 4px !important;
+  border-radius: 4px !important;
+  margin: 0 2px !important;
+}
