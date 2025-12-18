@@ -1,8 +1,29 @@
 {
   "name": "rwkv-code-completion",
-  "displayName": "rwkv-code-completion",
-  "description": "",
+  "displayName": "RWKV 代码补全",
+  "description": "基于 RWKV 模型的智能代码补全、AI 聊天和 Git 提交助手",
   "version": "0.0.1",
+  "publisher": "RWKV",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xun082/rwkv-code-completion.git"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/xun082/rwkv-code-completion#readme",
+  "bugs": {
+    "url": "https://github.com/xun082/rwkv-code-completion/issues"
+  },
+  "keywords": [
+    "rwkv",
+    "code-completion",
+    "ai",
+    "machine-learning",
+    "autocomplete",
+    "code-assistant",
+    "ai-chat",
+    "git-commit",
+    "智能补全"
+  ],
   "engines": {
     "vscode": "^1.106.1"
   },

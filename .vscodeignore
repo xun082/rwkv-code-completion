@@ -1,14 +1,40 @@
+# 开发和测试文件
 .vscode/**
 .vscode-test/**
 out/**
 node_modules/**
 src/**
+webview/**
+
+# 配置文件
 .gitignore
 .yarnrc
 esbuild.js
 vsc-extension-quickstart.md
 **/tsconfig.json
+**/tsconfig.node.json
 **/eslint.config.mjs
+components.json
+postcss.config.js
+tailwind.config.js
+rsbuild.config.mts
+
+# 源代码和映射文件
 **/*.map
 **/*.ts
+**/*.tsx
 **/.vscode-test.*
+
+# GitHub 和文档
+.github/**
+CHANGELOG.md
+README.md
+
+# 依赖文件
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# 其他
+.DS_Store
+*.vsix
