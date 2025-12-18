@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'  # 只在推送 v 开头的 tag 时触发，例如 v1.0.0, v0.0.1 等
 
+permissions:
+  contents: write  # 允许创建 GitHub Release
+
 jobs:
   publish:
     name: 发布到 VS Code Marketplace
