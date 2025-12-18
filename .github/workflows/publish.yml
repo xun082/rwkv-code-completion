@@ -57,10 +57,10 @@ jobs:
         run: pnpm add -g @vscode/vsce
         
       - name: 打包 VSIX
-        run: vsce package
+        run: vsce package --no-dependencies
         
       - name: 发布到 VS Code Marketplace
-        run: vsce publish -p ${{ secrets.VSCODE_ACCESS_TOKEN }}
+        run: vsce publish --no-dependencies -p ${{ secrets.VSCODE_ACCESS_TOKEN }}
         env:
           VSCODE_PAT: ${{ secrets.VSCODE_ACCESS_TOKEN }}
           
