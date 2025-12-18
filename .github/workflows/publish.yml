@@ -17,12 +17,12 @@ jobs:
       - name: 设置 Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22.18.0'
           
       - name: 安装 pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 10.20.0
           
       - name: 获取 pnpm store 目录
         id: pnpm-cache
@@ -39,7 +39,7 @@ jobs:
             ${{ runner.os }}-pnpm-store-
             
       - name: 安装依赖
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
         
       - name: 检查类型
         run: pnpm run check-types
