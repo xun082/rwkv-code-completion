@@ -203,6 +203,8 @@ class RWKVSidebarProvider implements vscode.TreeDataProvider<SidebarItem> {
 // 代码补全提供者
 class RWKVCompletionProvider implements vscode.InlineCompletionItemProvider {
   private lastTriggerTime = 0;
+  private lastTriggerPosition: vscode.Position | null = null;
+  private lastTriggerDocument: string | null = null;
   private abortController: AbortController | null = null;
   private completionService: CompletionService;
 
@@ -222,12 +224,22 @@ class RWKVCompletionProvider implements vscode.InlineCompletionItemProvider {
       return null;
     }
 
-    // 防抖处理
     const now = Date.now();
-    if (now - this.lastTriggerTime < config.debounceDelay) {
+    const currentDocUri = document.uri.toString();
+    
+    // 优化防抖：只在相同位置才防抖，位置变化立即触发
+    const isSamePosition = 
+      this.lastTriggerDocument === currentDocUri &&
+      this.lastTriggerPosition?.line === position.line &&
+      this.lastTriggerPosition?.character === position.character;
+
+    if (isSamePosition && now - this.lastTriggerTime < config.debounceDelay) {
       return null;
     }
+
     this.lastTriggerTime = now;
+    this.lastTriggerPosition = position;
+    this.lastTriggerDocument = currentDocUri;
 
     // 取消之前的请求
     if (this.abortController) {
@@ -242,7 +254,7 @@ class RWKVCompletionProvider implements vscode.InlineCompletionItemProvider {
       const languageId = document.languageId;
 
       // 如果前文太短，不触发补全
-      if (prefix.trim().length < 10) {
+      if (prefix.trim().length < 3) {
         return null;
       }
 
