@@ -2,7 +2,7 @@
   "name": "rwkv-code-completion",
   "displayName": "RWKV 代码补全",
   "description": "基于 RWKV 模型的智能代码补全、AI 聊天和 Git 提交助手",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "RWKV",
   "repository": {
     "type": "git",
