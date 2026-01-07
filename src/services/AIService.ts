@@ -17,7 +17,9 @@ export class AIService {
    * 非流式聊天
    */
   async chat(messages: AIMessage[], options?: ChatOptions): Promise<string> {
-    return this.provider.chat(messages, options);
+    const result = await this.provider.chat(messages, options);
+    // 如果返回数组，取第一个结果
+    return Array.isArray(result) ? result[0] : result;
   }
 
   /**
@@ -177,8 +179,8 @@ function createProvider(): RWKVLocalProvider {
   const config = vscode.workspace.getConfiguration("rwkv-code-completion");
   const baseUrl =
     config.get<string>("chat.baseUrl") ||
-    "http://192.168.0.12:8000/v1/chat/completions";
-  const password = config.get<string>("chat.password") || "rwkv7_7.2b_webgen";
+    "http://192.168.0.157:8001/v2/chat/completions";
+  const password = config.get<string>("chat.password") || "rwkv7_7.2b";
 
   return new RWKVLocalProvider({
     baseUrl,
