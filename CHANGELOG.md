@@ -4,13 +4,36 @@
 
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
+## [0.0.6] - 2026-01-08
+
+### ✨ 新增
+
+- 支持 FIM（Fill In the Middle）模式，自动根据是否有 suffix 选择合适的 API
+- 添加 24 个并发选项的多选择补全展示（2×2 网格）
+
+### 🔧 优化
+
+- 简化配置：用户只需配置基础 URL，接口路径自动拼接
+- API 接口路径常量化管理（`/v2/chat/completions` 和 `/FIM/v1/batch-FIM`）
+- 确保所有必需参数正确传递给 API
+- 添加 `.markdownlintrc` 忽略 MD041 警告
+
+### 🐛 修复
+
+- 修复配置项从 `endpoint` 改为 `baseUrl`
+- 修复 FIM 接口 URL 拼接逻辑
+
+---
+
 ## [0.0.5] - 2024-01-XX
 
 ### ✨ 新增
+
 - 添加快捷命令 "RWKV: 打开设置"
 - 实现 `enabled` 配置的禁用功能
 
 ### 🔧 优化
+
 - 完善配置项功能
 - 优化代码结构
 

@@ -1,9 +1,15 @@
 import * as vscode from "vscode";
 
+// API 接口路径常量
+const API_PATHS = {
+  COMPLETION: "/v2/chat/completions",
+  FIM: "/FIM/v1/batch-FIM",
+} as const;
+
 // 配置接口
 export interface CompletionConfig {
   enabled: boolean;
-  endpoint: string;
+  baseUrl: string; // 基础 URL，如 http://192.168.0.157:8001
   password: string;
   maxTokens: number;
   temperature: number;
@@ -19,10 +25,7 @@ export function getConfig(): CompletionConfig {
   const config = vscode.workspace.getConfiguration("rwkv-code-completion");
   return {
     enabled: config.get("enabled", true),
-    endpoint: config.get(
-      "endpoint",
-      "http://192.168.0.157:8001/v2/chat/completions"
-    ),
+    baseUrl: config.get("baseUrl", "http://192.168.0.157:8001"), // 只需要基础 URL
     password: config.get("password", "rwkv7_7.2b"),
     maxTokens: config.get("maxTokens", 200),
     temperature: config.get("temperature", 0.5),
@@ -63,7 +66,10 @@ export class CompletionService {
     signal: AbortSignal
   ): Promise<string[]> {
     try {
-      // 构建请求体
+      // 构建完整 API URL
+      const apiUrl = `${config.baseUrl}${API_PATHS.COMPLETION}`;
+
+      // 构建请求体 - 确保所有必需参数都传递
       const contents = Array(config.numChoices).fill(prefix);
       const body = {
         contents: contents,
@@ -82,7 +88,7 @@ export class CompletionService {
       };
 
       // 调用 API
-      const response = await fetch(config.endpoint, {
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -130,12 +136,15 @@ export class CompletionService {
     signal: AbortSignal
   ): Promise<string[]> {
     try {
+      // 构建完整 FIM API URL
+      const apiUrl = `${config.baseUrl}${API_PATHS.FIM}`;
+
       // FIM 接口固定 4 个并发
       const batchSize = 4;
       const prefixArray = Array(batchSize).fill(prefix);
       const suffixArray = Array(batchSize).fill(suffix);
 
-      // 构建 FIM 请求体
+      // 构建 FIM 请求体 - 确保所有必需参数都传递
       const body = {
         prefix: prefixArray,
         suffix: suffixArray,
@@ -151,14 +160,8 @@ export class CompletionService {
         password: config.password,
       };
 
-      // FIM 接口地址
-      const fimEndpoint = config.endpoint.replace(
-        "/v2/chat/completions",
-        "/FIM/v1/batch-FIM"
-      );
-
       // 调用 FIM API
-      const response = await fetch(fimEndpoint, {
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
