@@ -1,6 +1,4 @@
 import * as vscode from "vscode";
-import { RWKVLocalProvider } from "./services/providers/RWKVLocalProvider";
-import { AIMessage } from "./services/types";
 
 // 配置接口
 export interface CompletionConfig {
@@ -14,7 +12,6 @@ export interface CompletionConfig {
   numChoices: number;
   alphaPresence: number;
   alphaFrequency: number;
-  completionMode: "inline" | "standard" | "both";
 }
 
 // 获取配置
@@ -31,44 +28,14 @@ export function getConfig(): CompletionConfig {
     temperature: config.get("temperature", 0.5),
     topP: config.get("topP", 0.5),
     debounceDelay: config.get("debounceDelay", 150),
-    numChoices: config.get("numChoices", 24), // 默认 24 个并发
+    numChoices: config.get("numChoices", 24),
     alphaPresence: config.get("alphaPresence", 1.0),
     alphaFrequency: config.get("alphaFrequency", 0.1),
-    completionMode: config.get("completionMode", "both") as
-      | "inline"
-      | "standard"
-      | "both",
   };
 }
 
-// 代码补全服务类
+// 代码补全服务类 - 直接调用 RWKV API在
 export class CompletionService {
-  private provider: RWKVLocalProvider | null = null;
-  private lastEndpoint: string = "";
-  private lastPassword: string = "";
-
-  // 获取或创建 provider（如果配置改变则重新创建）
-  private getProvider(config: CompletionConfig): RWKVLocalProvider {
-    // 如果配置改变了，重新创建 provider
-    if (
-      !this.provider ||
-      this.lastEndpoint !== config.endpoint ||
-      this.lastPassword !== config.password
-    ) {
-      console.log("🔄 创建新的 RWKV Provider", {
-        endpoint: config.endpoint,
-        password: config.password,
-      });
-      this.provider = new RWKVLocalProvider({
-        baseUrl: config.endpoint,
-        password: config.password,
-      });
-      this.lastEndpoint = config.endpoint;
-      this.lastPassword = config.password;
-    }
-    return this.provider;
-  }
-
   // 调用本地 RWKV API 并支持多个补全选择
   async getCompletion(
     prefix: string,
@@ -78,204 +45,103 @@ export class CompletionService {
     signal: AbortSignal
   ): Promise<string[]> {
     try {
-      const provider = this.getProvider(config);
-
-      // 使用完整的前缀（已经在 extension.ts 中限制了长度）
-      const prefixPart = prefix;
-
-      // 构建 prompt - 纯代码格式（不使用对话格式）
-      const codePrompt = prefixPart;
-
-      // 构建消息（使用 user 消息承载纯代码）
-      const messages: AIMessage[] = [{ role: "user", content: codePrompt }];
-
       console.log("====== 代码补全请求 ======");
       console.log("语言:", languageId);
-      console.log("前缀长度:", prefixPart.length);
-      console.log("📊 配置的 numChoices:", config.numChoices);
-      if (config.numChoices > 10) {
-        console.log("🚀 大量并发模式 (>10)");
-      }
+      console.log("前缀长度:", prefix.length);
+      console.log("📊 请求的补全数量:", config.numChoices);
       console.log(
         "📍 前缀预览:",
-        prefixPart.substring(prefixPart.length - 100).replace(/\n/g, "\\n")
+        prefix.substring(prefix.length - 100).replace(/\n/g, "\\n")
       );
       console.log("========================");
 
-      // 调用 provider，支持批量并发生成多个选择
-      const result = await provider.chat(messages, {
-        model: "code-completion", // 标记为代码补全模式
+      // 构建请求体
+      const contents = Array(config.numChoices).fill(prefix);
+      const body = {
+        contents: contents,
+        stream: false,
+        password: config.password,
+        max_tokens: config.maxTokens,
         temperature: config.temperature,
-        maxTokens: config.maxTokens,
-        topP: config.topP,
-        topK: 100,
-        enableThink: false,
-        numChoices: config.numChoices, // 批量并发生成
-        alphaPresence: config.alphaPresence,
-        alphaFrequency: config.alphaFrequency,
+        top_p: config.topP,
+        top_k: 100,
+        alpha_presence: config.alphaPresence,
+        alpha_frequency: config.alphaFrequency,
+        alpha_decay: 0.99,
+        chunk_size: 128,
+        pad_zero: true,
+        stop_tokens: [0, 261, 24281],
+      };
+
+      console.log("🎯 发送请求，Contents 数量:", contents.length);
+
+      // 调用 API
+      const response = await fetch(config.endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(body),
         signal: signal,
       });
 
-      // 处理结果（可能是单个字符串或数组）
-      console.log("====== 收到 Provider 响应 ======");
-      console.log(
-        "🔍 result 类型:",
-        Array.isArray(result) ? "数组" : typeof result
-      );
-      console.log(
-        "🔍 result 内容:",
-        Array.isArray(result)
-          ? `[${result.length}个元素]`
-          : result.substring(0, 50)
-      );
+      console.log("====== API 响应 ======");
+      console.log("状态码:", response.status);
 
-      const results = Array.isArray(result) ? result : [result];
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => "无法读取错误信息");
+        throw new Error(`API 错误 (${response.status}): ${errorText}`);
+      }
 
-      console.log("📦 转换后的 results 数组长度:", results.length);
-      console.log("================================");
+      const data = await response.json();
 
-      // 清理每个补全内容 - 保留所有结果，即使内容相同
-      const cleanedResults: string[] = [];
-      for (let i = 0; i < results.length; i++) {
-        const text = results[i];
-        const cleaned = this.cleanCompletion(text, prefix);
+      console.log("📦 返回的 choices 数量:", data.choices?.length || 0);
 
-        // 即使清理后为空或相同，也保留（让用户看到所有选项）
-        if (cleaned !== undefined && cleaned !== null) {
-          const displayText = cleaned.trim() || text.trim();
-          console.log(
-            `✅ 补全 ${i + 1} (长度${displayText.length}):`,
-            displayText.substring(0, 50).replace(/\n/g, "\\n") + "..."
-          );
-          cleanedResults.push(displayText);
-        } else {
-          // 如果清理失败，使用原始文本
-          console.log(`⚠️ 补全 ${i + 1}: 清理失败，使用原始文本`);
-          cleanedResults.push(text.trim());
+      if (!data.choices || data.choices.length === 0) {
+        throw new Error("API 返回数据格式错误");
+      }
+
+      // 提取所有 choices
+      const results: string[] = [];
+      for (let i = 0; i < data.choices.length; i++) {
+        const choice = data.choices[i];
+        const content = choice.message?.content || choice.text;
+        if (content) {
+          results.push(content);
         }
       }
 
-      console.log("====== 最终返回 ======");
-      console.log(
-        `✅ 返回 ${cleanedResults.length} 个补全（原始 ${results.length} 个）`
-      );
-      console.log("所有结果都会显示，即使内容相同");
-      console.log("=====================");
+      console.log(`✅ 成功提取 ${results.length} 个补全`);
 
+      // 清理每个补全内容
+      const cleanedResults: string[] = [];
+      for (let i = 0; i < results.length; i++) {
+        const cleaned = this.cleanCompletion(results[i], prefix);
+        if (cleaned && cleaned.trim().length > 0) {
+          cleanedResults.push(cleaned.trim());
+        }
+      }
+
+      console.log(`✅ 返回 ${cleanedResults.length} 个有效补全`);
       return cleanedResults;
     } catch (error: any) {
       if (error.name === "AbortError") {
         throw error;
       }
+      console.error("❌ 补全请求失败:", error.message);
       return [];
     }
   }
 
-  // 清理代码补全内容
-  private cleanCompletion(text: string, prefix?: string): string {
+  // 清理代码补全内容 - API 返回的就是纯代码，只需要基础清理
+  private cleanCompletion(text: string, prefix: string): string {
     if (!text) {
-      console.log("⚠️  补全内容为空");
       return "";
     }
 
-    console.log("🔧 开始清理补全内容, 原始长度:", text.length);
-
-    let cleanResult = text;
-
-    // 步骤1：移除思考标记（如果有）
-    cleanResult = cleanResult.replace(/>[\s\S]*?<\/think>\s*/g, "");
-    if (cleanResult.includes("</think>")) {
-      const thinkEndIndex = cleanResult.indexOf("</think>");
-      cleanResult = cleanResult.substring(thinkEndIndex + 8).trim();
-    }
-    if (cleanResult.includes("<think>")) {
-      cleanResult = cleanResult.replace(/<think>/g, "");
-    }
-
-    // 步骤2：移除 markdown 代码块标记
-    cleanResult = cleanResult
-      .replace(/^```[\w]*\n?/gm, "")
-      .replace(/\n?```$/gm, "")
-      .replace(/```/g, "");
-
-    // 步骤3：移除 "Assistant:" 前缀（如果有）
-    cleanResult = cleanResult.replace(/^Assistant:\s*/i, "");
-
-    if (!prefix) {
-      console.log("✅ 清理完成（无前缀检查）, 长度:", cleanResult.length);
-      return cleanResult.trim();
-    }
-
-    // 步骤4：去除与前缀重复的部分
-    // 找到补全内容和前缀的重叠部分
-    const prefixEnd = prefix.slice(-200); // 取前缀的最后200个字符
-    let overlapLength = 0;
-
-    // 从长到短检查重叠
-    for (
-      let len = Math.min(prefixEnd.length, cleanResult.length);
-      len > 5;
-      len--
-    ) {
-      const prefixTail = prefixEnd.slice(-len);
-      const completionHead = cleanResult.slice(0, len);
-
-      if (prefixTail === completionHead) {
-        overlapLength = len;
-        console.log(`🔍 发现重叠部分，长度: ${len}`);
-        break;
-      }
-    }
-
-    if (overlapLength > 0) {
-      cleanResult = cleanResult.slice(overlapLength);
-      console.log(`✂️  移除重叠部分后，剩余长度: ${cleanResult.length}`);
-    }
-
-    // 步骤5：移除前缀完整行的重复
-    const prefixLines = prefix.split("\n");
-    const lastPrefixLines = prefixLines.slice(-5); // 最后5行
-    const resultLines = cleanResult.split("\n");
-    const cleanedLines: string[] = [];
-
-    
-
-    for (const line of resultLines) {
-      const trimmedLine = line.trim();
-
-      // 保留空行（用于保持格式）
-      if (!trimmedLine) {
-        cleanedLines.push(line);
-        continue;
-      }
-
-      // 跳过完全重复的行（与前缀的最后几行对比）
-      const isDuplicate = lastPrefixLines.some(
-        (prefixLine) => prefixLine.trim() === trimmedLine
-      );
-
-      if (isDuplicate && trimmedLine.length > 10) {
-        console.log(`⏭️  跳过重复行: ${trimmedLine.substring(0, 30)}...`);
-        continue;
-      }
-
-      cleanedLines.push(line);
-    }
-
-    let finalResult = cleanedLines.join("\n").trim();
-
-    // 步骤6：限制长度（最多15行非空行）
-    const nonEmptyLines = finalResult
-      .split("\n")
-      .filter((line) => line.trim().length > 0);
-
-    if (nonEmptyLines.length > 15) {
-      const limitedLines = finalResult.split("\n").slice(0, 20);
-      finalResult = limitedLines.join("\n").trim();
-      console.log(`✂️  限制长度到 15 个非空行`);
-    }
-
-    console.log(`✅ 清理完成，最终长度: ${finalResult.length}`);
-    return finalResult;
+    // API 返回的就是纯代码，直接返回即可
+    // 例如：" {\n  let left = 0;\n  let right" 或 "\n  let left = 0;\n  let right ="
+    return text;
   }
 }
