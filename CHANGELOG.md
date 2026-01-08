@@ -4,6 +4,24 @@
 
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
+## [0.0.4] - 2024-01-XX
+
+### 🎉 重构优化
+- 🧹 删除所有调试 console.log，代码更简洁
+- 📦 删除无用依赖（React、Tailwind、测试工具等）
+- 🗑️ 删除无用文件（测试文件、配置文件等）
+- 📝 重写 README 文档，更清晰易懂
+- 🌐 添加中文版 README
+- 📋 更新 CHANGELOG
+- ⚙️ 简化 package.json 配置
+
+### 性能提升
+- ⚡ 减少依赖数量从 31 个到 7 个
+- 📉 包体积显著减小
+- 🚀 构建速度更快
+
+---
+
 ## [0.0.3] - 2024-01-XX
 
 ### 🎉 新增
