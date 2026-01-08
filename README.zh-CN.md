@@ -4,7 +4,7 @@
 
 **基于 RWKV 模型的智能代码补全插件**
 
-[![版本](https://img.shields.io/badge/版本-0.0.4-blue.svg)](https://github.com/xun082/rwkv-code-completion)
+[![版本](https://img.shields.io/badge/版本-0.0.5-blue.svg)](https://github.com/xun082/rwkv-code-completion)
 [![许可证](https://img.shields.io/badge/许可证-MIT-green.svg)](https://github.com/xun082/rwkv-code-completion/blob/main/LICENSE)
 
 [English](README.md) | [简体中文](README.zh-CN.md)

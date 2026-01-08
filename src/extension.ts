@@ -18,6 +18,11 @@ class RWKVCompletionProvider implements vscode.CompletionItemProvider {
   ): Promise<vscode.CompletionItem[] | null> {
     const config = getConfig();
 
+    // 检查是否启用
+    if (!config.enabled) {
+      return null;
+    }
+
     // 防抖：清除之前的 timer，只在停止输入半秒后才触发请求
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer);
