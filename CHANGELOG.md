@@ -1,9 +1,51 @@
-# Change Log
+# 更新日志
 
-All notable changes to the "rwkv-code-completion" extension will be documented in this file.
+所有重要的变更都会记录在这个文件中。
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
-## [Unreleased]
+## [0.0.3] - 2024-01-XX
 
-- Initial release
+### 🎉 新增
+
+- ✨ 支持 FIM（Fill-in-the-Middle）模式，智能理解上下文
+- 🎯 多选择补全展示（2×2 网格界面）
+- ⚡ 防抖优化，停止输入后才触发请求
+- 🔄 自动触发：支持删除、换行、空格操作
+
+### 🔧 优化
+
+- 📦 精简依赖，删除无用的包（React、Tailwind 等）
+- 🧹 清理代码，删除调试日志和测试文件
+- 📝 重写 README 文档，更清晰易懂
+- ⚙️ 简化配置项，只保留必要参数
+
+### 🗑️ 删除
+
+- ❌ 移除 AI 聊天功能
+- ❌ 移除 Git 提交助手功能
+- ❌ 移除所有 UI 组件库依赖
+
+### 🐛 修复
+
+- 🔨 修复插入位置错误的问题
+- 🔨 修复防抖逻辑导致的频繁请求
+- 🔨 修复补全内容清理逻辑
+
+---
+
+## [0.0.2] - 2024-01-XX
+
+### 新增
+
+- 基础代码补全功能
+- WebView 补全展示面板
+
+---
+
+## [0.0.1] - 2024-01-XX
+
+### 新增
+
+- 初始版本
+- 基础项目结构

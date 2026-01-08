@@ -1,101 +1,269 @@
-# RWKV 代码补全插件
+# RWKV 代码补全
 
-基于 RWKV 的 VSCode 插件，提供代码补全、AI 聊天和 Git 提交助手。
+<div align="center">
 
-## 功能
+![RWKV Logo](https://raw.githubusercontent.com/xun082/rwkv-code-completion/main/icon.png)
 
-代码补全：写代码时自动提示
+**基于 RWKV 模型的智能代码补全插件**
 
-AI 聊天：侧边栏聊天窗口，聊天记录自动保存
+[![Version](https://img.shields.io/badge/version-0.0.3-blue.svg)](https://github.com/xun082/rwkv-code-completion)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/xun082/rwkv-code-completion/blob/main/LICENSE)
 
-Git 提交助手：自动生成规范的 commit 消息，支持 commitlint 格式
+[English](README.md) | [简体中文](README.zh-CN.md)
 
-## 安装使用
+</div>
 
-1. 下载插件包，在 VSCode 按 `Ctrl+Shift+X` 打开扩展面板
-2. 点右上角三个点 → 从 VSIX 安装
-3. 点击侧边栏的机器人图标，进入控制面板
-4. 填写 RWKV 服务地址（例如 `http://192.168.0.12:8000/v3/chat/completions`）
-5. 填写服务密码，点击启用补全
+---
 
-配置好后直接写代码就会自动提示。
+## ✨ 功能特性
 
-## 调整参数
+### 🚀 智能代码补全
 
-在控制面板可以调整：
+- **实时补全**：输入代码时自动触发，无需等待
+- **多选择模式**：同时生成 4 个补全建议，2×2 网格展示
+- **FIM 支持**：支持 Fill-in-the-Middle（填充中间）模式，智能理解上下文
+- **防抖优化**：停止输入后才触发，避免频繁请求
+- **自动触发**：支持删除、换行、空格等操作自动触发补全
 
-防抖延迟：打字后多久触发补全（默认 300ms）  
-最大 Token：补全的长度（8-32）  
-温度：随机性（0.1-0.2，数字越小越保守）
+### 🎯 使用场景
 
-## AI 聊天
+- ✅ 函数自动补全
+- ✅ 代码块生成
+- ✅ 变量命名建议
+- ✅ 注释和文档生成
+- ✅ 代码重构建议
 
-点击 AI 聊天面板，输入框打字，按 `Ctrl/Cmd + Enter` 发送。支持 Markdown 和代码块高亮。
+---
 
-聊天记录会自动保存，失败的对话不会保存，3 秒后自动消失。
+## 📦 安装
 
-只保留最近 5 条有效对话作为上下文，避免消耗太多 token。
+### 方式一：从 VSIX 安装（推荐）
 
-## Git 提交助手
+1. 下载最新的 `.vsix` 文件
+2. 打开 VSCode，按 `Ctrl+Shift+X`（Mac: `Cmd+Shift+X`）打开扩展面板
+3. 点击右上角的 `···` 菜单
+4. 选择 "从 VSIX 安装..."
+5. 选择下载的 `.vsix` 文件
 
-修改代码后打开 Git 提交助手面板：
+### 方式二：从市场安装
 
-1. 从下拉菜单选择提交类型（feat/fix/docs...）
-2. 填写 scope（可选，比如 auth、ui、api）
-3. 点 AI 按钮，自动生成描述
-4. 预览完整消息，确认后提交
+在 VSCode 扩展市场搜索 "RWKV 代码补全" 并安装。
 
-示例：
+---
 
-```
-feat(chat): 添加消息持久化功能
-fix(api): 修复用户登录接口超时问题
-docs: 更新使用文档
-```
+## ⚙️ 配置
 
-## 自定义提交类型
+### 1. 启动 RWKV 服务
 
-按 `Ctrl/Cmd + ,` 打开设置，搜索 `rwkv-code-completion.git`：
+首先需要启动 RWKV 模型服务。参考 [RWKV 官方文档](https://github.com/BlinkDL/RWKV-LM)。
+
+### 2. 配置插件
+
+按 `Ctrl+,`（Mac: `Cmd+,`）打开设置，搜索 `rwkv-code-completion`：
 
 ```json
 {
-  "rwkv-code-completion.git.commitTypes": [
-    {
-      "type": "feat",
-      "description": "新功能",
-      "emoji": "✨"
-    },
-    {
-      "type": "wip",
-      "description": "进行中",
-      "emoji": "🚧"
-    }
-  ],
-  "rwkv-code-completion.git.useEmoji": false,
-  "rwkv-code-completion.git.useScope": true
+  // 服务地址
+  "rwkv-code-completion.endpoint": "http://192.168.0.157:8001/v2/chat/completions",
+
+  // 服务密码
+  "rwkv-code-completion.password": "rwkv7_7.2b",
+
+  // 补全选择数量（1-50）
+  "rwkv-code-completion.numChoices": 4,
+
+  // 防抖延迟（毫秒）
+  "rwkv-code-completion.debounceDelay": 300,
+
+  // 最大生成 token 数
+  "rwkv-code-completion.maxTokens": 1024,
+
+  // 温度（0-2，越低越保守）
+  "rwkv-code-completion.temperature": 0.5,
+
+  // Top P 采样
+  "rwkv-code-completion.topP": 0.5,
+
+  // Alpha Presence（惩罚重复内容）
+  "rwkv-code-completion.alphaPresence": 1.0,
+
+  // Alpha Frequency（惩罚重复频率）
+  "rwkv-code-completion.alphaFrequency": 0.1
 }
 ```
 
-内置类型：feat、fix、docs、style、refactor、perf、test、build、ci、chore
+---
 
-## 常见问题
+## 🎮 使用方法
 
-代码补全没反应：检查控制面板是否显示已启用，确认服务地址填对了，试试等 300ms，实在不行重启 VSCode
+### 基本使用
 
-聊天一直转圈：可能是服务挂了，点停止按钮检查服务状态
+1. **自动触发**：编写代码时，插件会自动触发补全
+2. **查看建议**：补全会以 2×2 网格显示在侧边面板
+3. **选择插入**：点击任意一个代码块即可插入到光标位置
 
-提示不是 Git 仓库：在项目根目录运行 `git init`
+### 触发方式
 
-AI 生成的提交消息不满意：直接手动改，或者换个提交类型、填写更具体的 scope、多点几次生成按钮
+插件会在以下情况自动触发：
 
-聊天记录丢了：保存在 localStorage 里，清理缓存会丢失
+- ✅ 输入任何字符
+- ✅ 输入空格
+- ✅ 按回车换行
+- ✅ 删除字符（Backspace/Delete）
 
-## 开发
+### 高级用法
 
-```bash
-pnpm install
-pnpm run watch
-pnpm run compile
+#### Fill-in-the-Middle 模式
+
+当光标后面有代码时，插件会自动使用 FIM 模式：
+
+```javascript
+function calculateTotal(items) {
+  // 光标在这里 ← 插件会理解上下文
+  return total;
+}
 ```
 
-按 F5 启动调试。
+插件会智能生成中间部分的代码。
+
+#### 调整生成数量
+
+```json
+{
+  "rwkv-code-completion.numChoices": 8 // 生成 8 个建议
+}
+```
+
+**注意**：数量越多，请求时间越长。建议 4-8 个。
+
+#### 调整防抖延迟
+
+```json
+{
+  "rwkv-code-completion.debounceDelay": 500 // 500ms 后触发
+}
+```
+
+**建议**：
+
+- 快速响应：150-300ms
+- 节省资源：500-1000ms
+
+---
+
+## 📊 参数说明
+
+| 参数             | 默认值                                          | 范围   | 说明               |
+| ---------------- | ----------------------------------------------- | ------ | ------------------ |
+| `endpoint`       | `http://192.168.0.157:8001/v2/chat/completions` | -      | RWKV 服务地址      |
+| `password`       | `rwkv7_7.2b`                                    | -      | 服务密码           |
+| `numChoices`     | `4`                                             | 1-50   | 生成的补全数量     |
+| `debounceDelay`  | `300`                                           | 0-5000 | 防抖延迟（毫秒）   |
+| `maxTokens`      | `1024`                                          | 1-4096 | 最大生成 token 数  |
+| `temperature`    | `0.5`                                           | 0-2    | 温度（越低越保守） |
+| `topP`           | `0.5`                                           | 0-1    | Top P 采样         |
+| `alphaPresence`  | `1.0`                                           | -      | 惩罚重复内容       |
+| `alphaFrequency` | `0.1`                                           | -      | 惩罚重复频率       |
+
+---
+
+## 🔧 故障排查
+
+### 补全没有触发
+
+**原因**：
+
+1. 服务地址配置错误
+2. RWKV 服务未启动
+3. 防抖延迟太长
+
+**解决方案**：
+
+1. 检查 `endpoint` 配置是否正确
+2. 访问 `http://your-server:port` 确认服务运行
+3. 减小 `debounceDelay` 值
+
+### 补全速度慢
+
+**原因**：
+
+1. `numChoices` 设置过大
+2. `maxTokens` 设置过大
+3. 网络延迟
+
+**解决方案**：
+
+1. 减少 `numChoices` 到 4 或更少
+2. 减小 `maxTokens` 到 200-500
+3. 使用本地 RWKV 服务
+
+### 补全质量不好
+
+**原因**：
+
+1. `temperature` 设置过高或过低
+2. `maxTokens` 太小
+
+**解决方案**：
+
+1. 调整 `temperature` 到 0.3-0.7
+2. 增加 `maxTokens` 到 500-1024
+3. 调整 `alphaPresence` 和 `alphaFrequency`
+
+---
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+### 开发
+
+```bash
+# 安装依赖
+pnpm install
+
+# 开发模式（监听文件变化）
+pnpm run watch
+
+# 编译
+pnpm run compile
+
+# 打包
+pnpm run package
+```
+
+按 `F5` 启动调试。
+
+---
+
+## 📄 许可证
+
+[MIT License](LICENSE)
+
+---
+
+## 🔗 相关链接
+
+- [GitHub 仓库](https://github.com/xun082/rwkv-code-completion)
+- [RWKV 官方](https://github.com/BlinkDL/RWKV-LM)
+- [问题反馈](https://github.com/xun082/rwkv-code-completion/issues)
+
+---
+
+## 💬 反馈与支持
+
+如果遇到问题或有建议，欢迎：
+
+- 提交 [Issue](https://github.com/xun082/rwkv-code-completion/issues)
+- 发起 [Discussion](https://github.com/xun082/rwkv-code-completion/discussions)
+- 为项目 ⭐ Star
+
+---
+
+<div align="center">
+
+**感谢使用 RWKV 代码补全插件！**
+
+Made with ❤️ by RWKV Community
+
+</div>

@@ -4,6 +4,7 @@ import { CompletionService, getConfig } from "./completionService";
 class RWKVCompletionProvider implements vscode.CompletionItemProvider {
   private completionService: CompletionService;
   private abortController: AbortController | null = null;
+  private debounceTimer: NodeJS.Timeout | null = null;
 
   constructor() {
     this.completionService = new CompletionService();
@@ -17,73 +18,84 @@ class RWKVCompletionProvider implements vscode.CompletionItemProvider {
   ): Promise<vscode.CompletionItem[] | null> {
     const config = getConfig();
 
-    if (this.abortController) {
-      this.abortController.abort();
+    // 防抖：清除之前的 timer，只在停止输入半秒后才触发请求
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
     }
-    this.abortController = new AbortController();
 
-    try {
-      const prefix = this.getPrefix(document, position);
-      const suffix = this.getSuffix(document, position);
-      const languageId = document.languageId;
-
-      // 显示加载提示
-      vscode.window.withProgress(
-        {
-          location: vscode.ProgressLocation.Notification,
-          title: `🤖 RWKV 正在生成 ${config.numChoices} 个代码补全...`,
-          cancellable: true,
-        },
-        async (progress, progressToken) => {
-          progressToken.onCancellationRequested(() => {
-            this.abortController?.abort();
-          });
-
-          const completions = await this.completionService.getCompletion(
-            prefix,
-            suffix,
-            languageId,
-            config,
-            this.abortController!.signal
-          );
-
-          if (!completions || completions.length === 0) {
-            vscode.window.showWarningMessage("未生成任何补全结果");
-            return;
-          }
-
-          const validCompletions = completions.filter(
-            (c) => c && c.trim().length > 0
-          );
-
-          if (validCompletions.length === 0) {
-            vscode.window.showWarningMessage("所有补全结果为空");
-            return;
-          }
-
-          // 显示成功消息
-          vscode.window.showInformationMessage(
-            `✅ 已生成 ${validCompletions.length} 个补全选项`
-          );
-
-          // 显示 WebView 面板
-          this.showCompletionWebview(
-            document,
-            position,
-            validCompletions,
-            languageId
-          );
+    // 延迟执行 - 只有停止输入后才发送请求
+    return new Promise((resolve) => {
+      this.debounceTimer = setTimeout(async () => {
+        // 取消之前的请求（如果有）
+        if (this.abortController) {
+          this.abortController.abort();
         }
-      );
+        this.abortController = new AbortController();
 
-      return null;
-    } catch (error: any) {
-      if (error.name !== "AbortError") {
-        console.error("补全错误:", error);
-        vscode.window.showErrorMessage(`补全失败: ${error.message}`);
-      }
-      return null;
-    }
+        try {
+          const prefix = this.getPrefix(document, position);
+          const suffix = this.getSuffix(document, position);
+          const languageId = document.languageId;
+
+          // 显示加载提示
+          vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: `🤖 RWKV 正在生成 ${config.numChoices} 个代码补全...`,
+              cancellable: true,
+            },
+            async (progress, progressToken) => {
+              progressToken.onCancellationRequested(() => {
+                this.abortController?.abort();
+              });
+
+              const completions = await this.completionService.getCompletion(
+                prefix,
+                suffix,
+                languageId,
+                config,
+                this.abortController!.signal
+              );
+
+              if (!completions || completions.length === 0) {
+                vscode.window.showWarningMessage("未生成任何补全结果");
+                return;
+              }
+
+              const validCompletions = completions.filter(
+                (c) => c && c.trim().length > 0
+              );
+
+              if (validCompletions.length === 0) {
+                vscode.window.showWarningMessage("所有补全结果为空");
+                return;
+              }
+
+              // 显示成功消息
+              vscode.window.showInformationMessage(
+                `✅ 已生成 ${validCompletions.length} 个补全选项`
+              );
+
+              // 显示 WebView 面板
+              this.showCompletionWebview(
+                document,
+                position,
+                validCompletions,
+                languageId
+              );
+            }
+          );
+
+          resolve(null);
+        } catch (error: any) {
+          if (error.name !== "AbortError") {
+            console.error("补全错误:", error);
+            vscode.window.showErrorMessage(`补全失败: ${error.message}`);
+          }
+          resolve(null);
+        }
+      }, config.debounceDelay);
+    });
   }
 
   private showCompletionWebview(
@@ -107,12 +119,10 @@ class RWKVCompletionProvider implements vscode.CompletionItemProvider {
 
     // 保存原始文档和位置（关键！）
     const targetDocument = document;
-    const targetPosition = position;
+    const targetPosition = position; // 触发补全时的位置
 
     // 处理消息
     panel.webview.onDidReceiveMessage(async (message) => {
-      console.log("收到消息:", message.command);
-
       if (message.command === "insert") {
         // 先切换回原编辑器
         const editor = await vscode.window.showTextDocument(
@@ -122,27 +132,18 @@ class RWKVCompletionProvider implements vscode.CompletionItemProvider {
         );
 
         if (!editor) {
-          console.error("无法打开目标编辑器");
           vscode.window.showErrorMessage("无法打开目标编辑器");
           return;
         }
 
-        // 使用当前光标位置
-        const insertPosition = editor.selection.active;
-
-        console.log(
-          "准备插入代码，位置:",
-          insertPosition.line,
-          insertPosition.character
-        );
-        console.log("代码长度:", message.code.length);
+        // 使用触发补全时保存的位置
+        const insertPosition = targetPosition;
 
         const success = await editor.edit((editBuilder) => {
           editBuilder.insert(insertPosition, message.code);
         });
 
         if (success) {
-          console.log("插入成功");
           panel.dispose();
 
           // 插入成功后，延迟触发下一次补全
@@ -150,7 +151,6 @@ class RWKVCompletionProvider implements vscode.CompletionItemProvider {
             vscode.commands.executeCommand("editor.action.triggerSuggest");
           }, 300);
         } else {
-          console.error("插入失败");
           vscode.window.showErrorMessage("代码插入失败");
         }
       }
@@ -297,8 +297,6 @@ class RWKVCompletionProvider implements vscode.CompletionItemProvider {
     const vscode = acquireVsCodeApi();
     const completions = ${completionsJson};
 
-    console.log('WebView 已加载，共', completions.length, '个补全');
-
     function escapeHtml(text) {
       return text
         .replace(/&/g, '&amp;')
@@ -310,8 +308,6 @@ class RWKVCompletionProvider implements vscode.CompletionItemProvider {
 
     function insertCode(index) {
       const code = completions[index];
-      console.log('插入代码，选项', index + 1, '长度:', code.length);
-      
       vscode.postMessage({
         command: 'insert',
         code: code
@@ -341,16 +337,12 @@ class RWKVCompletionProvider implements vscode.CompletionItemProvider {
       }
       
       container.innerHTML = html.join('');
-      console.log('渲染完成，共', completions.length, '个代码块');
 
       // 绑定点击事件
       const blocks = document.querySelectorAll('.code-block');
-      console.log('绑定点击事件，共', blocks.length, '个元素');
-      
       blocks.forEach((el, idx) => {
         el.addEventListener('click', function(e) {
           const index = parseInt(this.dataset.index);
-          console.log('点击了选项', index + 1);
           
           // 视觉反馈
           blocks.forEach(b => b.classList.remove('selected'));
@@ -396,10 +388,12 @@ class RWKVCompletionProvider implements vscode.CompletionItemProvider {
 export function activate(context: vscode.ExtensionContext) {
   const provider = new RWKVCompletionProvider();
 
-  // 生成所有可打印 ASCII 字符作为触发字符
-  const triggerChars = Array.from({ length: 94 }, (_, i) =>
-    String.fromCharCode(i + 33)
-  );
+  // 生成所有可打印 ASCII 字符 + 空格作为触发字符
+  const triggerChars = [
+    " ", // 空格
+    "\n", // 换行
+    ...Array.from({ length: 94 }, (_, i) => String.fromCharCode(i + 33)),
+  ];
 
   const disposable = vscode.languages.registerCompletionItemProvider(
     { pattern: "**" },
@@ -408,6 +402,61 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(disposable);
+
+  // 监听文档变化，在删除/换行/空格时自动触发补全
+  let debounceTimer: NodeJS.Timeout | undefined;
+  let lastTriggerTime = 0;
+  const changeListener = vscode.workspace.onDidChangeTextDocument((event) => {
+    // 清除之前的定时器
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+
+    // 获取配置
+    const config = getConfig();
+    if (!config.enabled) {
+      return;
+    }
+
+    // 只处理当前活动编辑器的文档
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || editor.document !== event.document) {
+      return;
+    }
+
+    // 避免过于频繁触发（最少间隔 500ms）
+    const now = Date.now();
+    if (now - lastTriggerTime < 500) {
+      return;
+    }
+
+    // 检查是否是删除、换行或空格操作
+    const shouldTrigger = event.contentChanges.some((change) => {
+      // 删除操作：rangeLength > 0 且 text 为空
+      const isDelete = change.rangeLength > 0 && change.text === "";
+      // 换行操作：text 只包含换行符
+      const isNewline = change.text === "\n" || change.text === "\r\n";
+      // 空格输入：text 只是一个空格
+      const isSpace = change.text === " ";
+
+      return isDelete || isNewline || isSpace;
+    });
+
+    if (!shouldTrigger) {
+      return;
+    }
+
+    // 防抖：延迟触发补全
+    debounceTimer = setTimeout(() => {
+      if (editor === vscode.window.activeTextEditor) {
+        lastTriggerTime = Date.now();
+        // 手动触发代码补全
+        vscode.commands.executeCommand("editor.action.triggerSuggest");
+      }
+    }, config.debounceDelay);
+  });
+
+  context.subscriptions.push(changeListener);
 }
 
 export function deactivate() {}

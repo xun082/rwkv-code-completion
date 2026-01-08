@@ -1,9 +1,10 @@
 {
   "name": "rwkv-code-completion",
   "displayName": "RWKV 代码补全",
-  "description": "基于 RWKV 模型的智能代码补全",
+  "description": "基于 RWKV 模型的智能代码补全插件，支持实时补全、FIM 模式和多选择展示",
   "version": "0.0.3",
   "publisher": "rwkv",
+  "icon": "icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/xun082/rwkv-code-completion.git"
@@ -88,21 +89,6 @@
           "maximum": 50,
           "description": "代码补全时生成的选择数量（1-50，利用并发生成多个建议）"
         },
-        "rwkv-code-completion.completionMode": {
-          "type": "string",
-          "enum": [
-            "inline",
-            "standard",
-            "both"
-          ],
-          "default": "both",
-          "enumDescriptions": [
-            "仅使用 Inline 补全（自动触发，用 Alt+] 切换）",
-            "仅使用标准补全（按 Ctrl+Space，显示列表）",
-            "同时启用两种模式（推荐）"
-          ],
-          "description": "补全显示模式"
-        },
         "rwkv-code-completion.debounceDelay": {
           "type": "number",
           "default": 300,
@@ -120,46 +106,16 @@
     "watch:esbuild": "node esbuild.js --watch",
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
     "package": "pnpm run check-types && pnpm run lint && node esbuild.js --production",
-    "compile-tests": "tsc -p . --outDir out",
-    "watch-tests": "tsc -p . -w --outDir out",
-    "pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
     "check-types": "tsc --noEmit",
-    "lint": "eslint src",
-    "test": "vscode-test"
+    "lint": "eslint src"
   },
   "devDependencies": {
-    "@rsbuild/core": "^1.6.14",
-    "@rsbuild/plugin-react": "^1.4.2",
-    "@tailwindcss/postcss": "^4.1.17",
-    "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
-    "@types/react": "^19.2.7",
-    "@types/react-dom": "^19.2.3",
     "@types/vscode": "^1.106.1",
-    "@vscode/test-cli": "^0.0.12",
-    "@vscode/test-electron": "^2.5.2",
-    "autoprefixer": "^10.4.22",
     "esbuild": "^0.27.1",
     "eslint": "^9.39.1",
     "npm-run-all": "^4.1.5",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.17",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.48.1"
-  },
-  "dependencies": {
-    "@radix-ui/react-avatar": "^1.1.11",
-    "@radix-ui/react-slot": "^1.2.4",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "highlight.js": "^11.11.1",
-    "lucide-react": "^0.559.0",
-    "react": "^19.2.1",
-    "react-dom": "^19.2.1",
-    "react-markdown": "^10.1.0",
-    "rehype-highlight": "^7.0.2",
-    "rehype-raw": "^7.0.0",
-    "remark-gfm": "^4.0.1",
-    "tailwind-merge": "^3.4.0"
   }
 }
