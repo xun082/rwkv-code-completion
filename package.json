@@ -1,7 +1,7 @@
 {
   "name": "rwkv-code-completion",
   "displayName": "RWKV 代码补全",
-  "description": "基于 RWKV 模型的智能代码补全、AI 聊天和 Git 提交助手",
+  "description": "基于 RWKV 模型的智能代码补全",
   "version": "0.0.3",
   "publisher": "rwkv",
   "repository": {
@@ -20,8 +20,6 @@
     "machine-learning",
     "autocomplete",
     "code-assistant",
-    "ai-chat",
-    "git-commit",
     "智能补全"
   ],
   "engines": {
@@ -36,135 +34,6 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "rwkv-sidebar",
-          "title": "RWKV 代码补全",
-          "icon": "$(robot)"
-        }
-      ]
-    },
-    "views": {
-      "rwkv-sidebar": [
-        {
-          "id": "rwkv-control-panel",
-          "name": "控制面板",
-          "type": "webview"
-        },
-        {
-          "id": "rwkv-chat-panel",
-          "name": "AI 聊天",
-          "type": "webview"
-        },
-        {
-          "id": "rwkv-git-commit",
-          "name": "Git 提交助手",
-          "type": "webview"
-        }
-      ]
-    },
-    "commands": [
-      {
-        "command": "rwkv-code-completion.toggleCompletion",
-        "title": "RWKV: 启用/禁用代码补全",
-        "icon": "$(debug-start)"
-      },
-      {
-        "command": "rwkv-code-completion.openSettings",
-        "title": "RWKV: 打开设置",
-        "icon": "$(settings-gear)"
-      },
-      {
-        "command": "rwkv-code-completion.refreshPanel",
-        "title": "刷新面板",
-        "icon": "$(refresh)"
-      },
-      {
-        "command": "rwkv-code-completion.editEndpoint",
-        "title": "RWKV: 编辑服务端点",
-        "icon": "$(edit)"
-      },
-      {
-        "command": "rwkv-code-completion.editMaxTokens",
-        "title": "RWKV: 编辑最大Token",
-        "icon": "$(edit)"
-      },
-      {
-        "command": "rwkv-code-completion.editTemperature",
-        "title": "RWKV: 编辑温度参数",
-        "icon": "$(edit)"
-      },
-      {
-        "command": "rwkv-code-completion.editTopP",
-        "title": "RWKV: 编辑Top P",
-        "icon": "$(edit)"
-      },
-      {
-        "command": "rwkv-code-completion.editDebounceDelay",
-        "title": "RWKV: 编辑防抖延迟",
-        "icon": "$(edit)"
-      },
-      {
-        "command": "rwkv-code-completion.switchCompletionMode",
-        "title": "RWKV: 切换补全模式",
-        "icon": "$(list-tree)"
-      },
-      {
-        "command": "rwkv-code-completion.showStatus",
-        "title": "RWKV: 查看状态",
-        "icon": "$(info)"
-      },
-      {
-        "command": "rwkv-code-completion.showHelp",
-        "title": "RWKV: 使用帮助",
-        "icon": "$(question)"
-      }
-    ],
-    "menus": {
-      "view/title": [
-        {
-          "command": "rwkv-code-completion.refreshPanel",
-          "when": "view == rwkv-control-panel",
-          "group": "navigation"
-        }
-      ],
-      "view/item/context": [
-        {
-          "command": "rwkv-code-completion.toggleCompletion",
-          "when": "view == rwkv-control-panel && viewItem == toggleButton"
-        },
-        {
-          "command": "rwkv-code-completion.openSettings",
-          "when": "view == rwkv-control-panel && viewItem == settingsButton"
-        },
-        {
-          "command": "rwkv-code-completion.editEndpoint",
-          "when": "view == rwkv-control-panel && viewItem == endpoint",
-          "group": "inline"
-        },
-        {
-          "command": "rwkv-code-completion.editMaxTokens",
-          "when": "view == rwkv-control-panel && viewItem == maxTokens",
-          "group": "inline"
-        },
-        {
-          "command": "rwkv-code-completion.editTemperature",
-          "when": "view == rwkv-control-panel && viewItem == temperature",
-          "group": "inline"
-        },
-        {
-          "command": "rwkv-code-completion.editTopP",
-          "when": "view == rwkv-control-panel && viewItem == topP",
-          "group": "inline"
-        },
-        {
-          "command": "rwkv-code-completion.editDebounceDelay",
-          "when": "view == rwkv-control-panel && viewItem == debounceDelay",
-          "group": "inline"
-        }
-      ]
-    },
     "configuration": {
       "title": "RWKV Code Completion",
       "properties": {
@@ -204,7 +73,7 @@
         },
         "rwkv-code-completion.alphaPresence": {
           "type": "number",
-          "default": 1.0,
+          "default": 1,
           "description": "Alpha Presence 参数（惩罚重复内容）"
         },
         "rwkv-code-completion.alphaFrequency": {
@@ -214,14 +83,18 @@
         },
         "rwkv-code-completion.numChoices": {
           "type": "number",
-          "default": 24,
+          "default": 4,
           "minimum": 1,
           "maximum": 50,
-          "description": "代码补全时生成的选择数量（1-50，利用并发生成多个建议，推荐 24）"
+          "description": "代码补全时生成的选择数量（1-50，利用并发生成多个建议）"
         },
         "rwkv-code-completion.completionMode": {
           "type": "string",
-          "enum": ["inline", "standard", "both"],
+          "enum": [
+            "inline",
+            "standard",
+            "both"
+          ],
           "default": "both",
           "enumDescriptions": [
             "仅使用 Inline 补全（自动触发，用 Alt+] 切换）",
@@ -236,90 +109,17 @@
           "minimum": 0,
           "maximum": 5000,
           "description": "触发补全的延迟时间（毫秒）"
-        },
-        "rwkv-code-completion.chat.baseUrl": {
-          "type": "string",
-          "default": "http://192.168.0.157:8001/v2/chat/completions",
-          "description": "AI 聊天服务地址"
-        },
-        "rwkv-code-completion.chat.password": {
-          "type": "string",
-          "default": "rwkv7_7.2b",
-          "description": "AI 聊天服务密码"
-        },
-        "rwkv-code-completion.git.commitTypes": {
-          "type": "array",
-          "default": [
-            {
-              "type": "feat",
-              "description": "新功能",
-              "emoji": "✨"
-            },
-            {
-              "type": "fix",
-              "description": "修复",
-              "emoji": "🐛"
-            },
-            {
-              "type": "docs",
-              "description": "文档",
-              "emoji": "📝"
-            },
-            {
-              "type": "style",
-              "description": "格式",
-              "emoji": "💄"
-            },
-            {
-              "type": "refactor",
-              "description": "重构",
-              "emoji": "♻️"
-            },
-            {
-              "type": "perf",
-              "description": "性能",
-              "emoji": "⚡"
-            },
-            {
-              "type": "test",
-              "description": "测试",
-              "emoji": "✅"
-            },
-            {
-              "type": "build",
-              "description": "构建",
-              "emoji": "📦"
-            },
-            {
-              "type": "ci",
-              "description": "CI/CD",
-              "emoji": "👷"
-            },
-            {
-              "type": "chore",
-              "description": "杂项",
-              "emoji": "🔧"
-            }
-          ],
-          "description": "Git 提交类型配置"
-        },
-        "rwkv-code-completion.git.useEmoji": {
-          "type": "boolean",
-          "default": false,
-          "description": "在提交消息中使用 emoji"
         }
       }
     }
   },
   "scripts": {
     "vscode:prepublish": "pnpm run package",
-    "compile": "pnpm run check-types && pnpm run lint && pnpm run build:webview && node esbuild.js",
+    "compile": "pnpm run check-types && pnpm run lint && node esbuild.js",
     "watch": "npm-run-all -p watch:*",
     "watch:esbuild": "node esbuild.js --watch",
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
-    "watch:webview": "rsbuild build --watch",
-    "build:webview": "rsbuild build",
-    "package": "pnpm run check-types && pnpm run lint && pnpm run build:webview && node esbuild.js --production",
+    "package": "pnpm run check-types && pnpm run lint && node esbuild.js --production",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",

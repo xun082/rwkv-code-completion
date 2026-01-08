@@ -238,6 +238,8 @@ export class CompletionService {
     const resultLines = cleanResult.split("\n");
     const cleanedLines: string[] = [];
 
+    
+
     for (const line of resultLines) {
       const trimmedLine = line.trim();
 
