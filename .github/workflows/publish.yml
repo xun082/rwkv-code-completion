@@ -3,36 +3,36 @@ name: 发布扩展
 on:
   push:
     tags:
-      - 'v*'  # 只在推送 v 开头的 tag 时触发，例如 v1.0.0, v0.0.1 等
+      - "v*" # 只在推送 v 开头的 tag 时触发，例如 v1.0.0, v0.0.1 等
 
 permissions:
-  contents: write  # 允许创建 GitHub Release
+  contents: write # 允许创建 GitHub Release
 
 jobs:
   publish:
     name: 发布到 VS Code Marketplace
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
-        
+
       - name: 设置 Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.18.0'
-          
+          node-version: "22.18.0"
+
       - name: 安装 pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10.20.0
-          
+
       - name: 获取 pnpm store 目录
         id: pnpm-cache
         shell: bash
         run: |
           echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-          
+
       - name: 设置 pnpm 缓存
         uses: actions/cache@v4
         with:
@@ -40,37 +40,36 @@ jobs:
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
-            
+
       - name: 安装依赖
         run: pnpm install --no-frozen-lockfile
-        
+
       - name: 检查类型
         run: pnpm run check-types
-        
+
       - name: 代码检查
         run: pnpm run lint
-        
+
       - name: 打包扩展
         run: pnpm run package
-        
+
       - name: 安装 vsce
         run: pnpm add -g @vscode/vsce
-        
+
       - name: 打包 VSIX
         run: vsce package --no-dependencies
-        
+
       - name: 发布到 VS Code Marketplace
         run: vsce publish --no-dependencies -p ${{ secrets.VSCODE_ACCESS_TOKEN }}
         env:
           VSCODE_PAT: ${{ secrets.VSCODE_ACCESS_TOKEN }}
-          
+
       - name: 创建 GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: '*.vsix'
+          files: "*.vsix"
           generate_release_notes: true
           draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
