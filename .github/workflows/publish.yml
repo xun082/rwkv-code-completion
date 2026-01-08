@@ -50,9 +50,6 @@ jobs:
       - name: 代码检查
         run: pnpm run lint
         
-      - name: 构建 Webview
-        run: pnpm run build:webview
-        
       - name: 打包扩展
         run: pnpm run package
         
