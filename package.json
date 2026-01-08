@@ -35,6 +35,13 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "commands": [
+      {
+        "command": "rwkv-code-completion.openSettings",
+        "title": "RWKV: 打开设置",
+        "category": "RWKV"
+      }
+    ],
     "configuration": {
       "title": "RWKV Code Completion",
       "properties": {

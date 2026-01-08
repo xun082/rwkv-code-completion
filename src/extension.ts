@@ -388,6 +388,17 @@ class RWKVCompletionProvider implements vscode.CompletionItemProvider {
 export function activate(context: vscode.ExtensionContext) {
   const provider = new RWKVCompletionProvider();
 
+  // 注册打开设置命令
+  const openSettingsCommand = vscode.commands.registerCommand(
+    "rwkv-code-completion.openSettings",
+    () => {
+      vscode.commands.executeCommand(
+        "workbench.action.openSettings",
+        "rwkv-code-completion"
+      );
+    }
+  );
+
   // 生成所有可打印 ASCII 字符 + 空格作为触发字符
   const triggerChars = [
     " ", // 空格
@@ -401,7 +412,7 @@ export function activate(context: vscode.ExtensionContext) {
     ...triggerChars
   );
 
-  context.subscriptions.push(disposable);
+  context.subscriptions.push(openSettingsCommand, disposable);
 
   // 监听文档变化，在删除/换行/空格时自动触发补全
   let debounceTimer: NodeJS.Timeout | undefined;
