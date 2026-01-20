@@ -51,13 +51,13 @@
 
 ---
 
+## 🖥️ 后端部署（必读）
+
+本插件需**自建 RWKV 推理后端**。请按 [rwkv_lightning](https://github.com/RWKV-Vibe/rwkv_lightning) 仓库说明完成部署；配置插件时，`endpoint` 填 `http://<主机>:<端口>/v2/chat/completions`，`password` 与后端启动参数 `--password` 一致。
+
+---
+
 ## ⚙️ 配置
-
-### 1. 启动 RWKV 服务
-
-首先需要启动 RWKV 模型服务。参考 [RWKV 官方文档](https://github.com/BlinkDL/RWKV-LM)。
-
-### 2. 配置插件
 
 按 `Ctrl+,`（Mac: `Cmd+,`）打开设置，搜索 `rwkv-code-completion`：
 
@@ -153,17 +153,17 @@ function calculateTotal(items) {
 
 ## 📊 参数说明
 
-| 参数             | 默认值                                          | 范围   | 说明               |
-| ---------------- | ----------------------------------------------- | ------ | ------------------ |
+| 参数             | 默认值                                          | 范围   | 说明                                                                 |
+| ---------------- | ----------------------------------------------- | ------ | -------------------------------------------------------------------- |
 | `endpoint`       | `http://192.168.0.157:8001/v2/chat/completions` | -      | RWKV 服务地址      |
 | `password`       | `rwkv7_7.2b`                                    | -      | 服务密码           |
-| `numChoices`     | `4`                                             | 1-50   | 生成的补全数量     |
-| `debounceDelay`  | `300`                                           | 0-5000 | 防抖延迟（毫秒）   |
-| `maxTokens`      | `1024`                                          | 1-4096 | 最大生成 token 数  |
-| `temperature`    | `0.5`                                           | 0-2    | 温度（越低越保守） |
-| `topP`           | `0.5`                                           | 0-1    | Top P 采样         |
-| `alphaPresence`  | `1.0`                                           | -      | 惩罚重复内容       |
-| `alphaFrequency` | `0.1`                                           | -      | 惩罚重复频率       |
+| `numChoices`     | `4`                                             | 1-50   | 生成的补全数量                                                       |
+| `debounceDelay`  | `300`                                           | 0-5000 | 防抖延迟（毫秒）                                                     |
+| `maxTokens`      | `1024`                                          | 1-4096 | 最大生成 token 数                                                    |
+| `temperature`    | `0.5`                                           | 0-2    | 温度（越低越保守）                                                   |
+| `topP`           | `0.5`                                           | 0-1    | Top P 采样                                                           |
+| `alphaPresence`  | `1.0`                                           | -      | 惩罚重复内容                                                         |
+| `alphaFrequency` | `0.1`                                           | -      | 惩罚重复频率                                                         |
 
 ---
 
@@ -171,44 +171,21 @@ function calculateTotal(items) {
 
 ### 补全没有触发
 
-**原因**：
+**原因**：服务地址配置错误、RWKV 服务未启动、防抖延迟太长。
 
-1. 服务地址配置错误
-2. RWKV 服务未启动
-3. 防抖延迟太长
-
-**解决方案**：
-
-1. 检查 `endpoint` 配置是否正确
-2. 访问 `http://your-server:port` 确认服务运行
-3. 减小 `debounceDelay` 值
+**解决方案**：按 [rwkv_lightning](https://github.com/RWKV-Vibe/rwkv_lightning) 完成后端部署；检查 `endpoint`、`password`；减小 `debounceDelay`。
 
 ### 补全速度慢
 
-**原因**：
+**原因**：`numChoices` 过大、`maxTokens` 过大、网络延迟。
 
-1. `numChoices` 设置过大
-2. `maxTokens` 设置过大
-3. 网络延迟
-
-**解决方案**：
-
-1. 减少 `numChoices` 到 4 或更少
-2. 减小 `maxTokens` 到 200-500
-3. 使用本地 RWKV 服务
+**解决方案**：减少 `numChoices` 到 4 或更少；减小 `maxTokens` 到 200–500；使用本地 RWKV 服务。
 
 ### 补全质量不好
 
-**原因**：
+**原因**：`temperature` 设置不当、`maxTokens` 太小。
 
-1. `temperature` 设置过高或过低
-2. `maxTokens` 太小
-
-**解决方案**：
-
-1. 调整 `temperature` 到 0.3-0.7
-2. 增加 `maxTokens` 到 500-1024
-3. 调整 `alphaPresence` 和 `alphaFrequency`
+**解决方案**：调整 `temperature` 到 0.3–0.7；增加 `maxTokens` 到 500–1024；调整 `alphaPresence` 和 `alphaFrequency`。
 
 ---
 
@@ -245,6 +222,7 @@ pnpm run package
 ## 🔗 相关链接
 
 - [GitHub 仓库](https://github.com/xun082/rwkv-code-completion)
+- [rwkv_lightning 后端](https://github.com/RWKV-Vibe/rwkv_lightning)（推荐用于部署推理服务）
 - [RWKV 官方](https://github.com/BlinkDL/RWKV-LM)
 - [问题反馈](https://github.com/xun082/rwkv-code-completion/issues)
 

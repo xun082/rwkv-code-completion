@@ -2,7 +2,7 @@
   "name": "rwkv-code-completion",
   "displayName": "RWKV 代码补全",
   "description": "基于 RWKV 模型的智能代码补全插件，支持实时补全、FIM 模式和多选择展示",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "publisher": "rwkv",
   "icon": "icon.png",
   "repository": {

@@ -4,6 +4,15 @@
 
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
+## [0.0.7] - 2026-01-20
+
+### 📝 文档
+
+- 新增后端部署说明，引导通过 [rwkv_lightning](https://github.com/RWKV-Vibe/rwkv_lightning) 自建推理服务
+- 精简 README、README.zh-CN 中的配置与故障排查说明
+
+---
+
 ## [0.0.6] - 2026-01-08
 
 ### ✨ 新增
